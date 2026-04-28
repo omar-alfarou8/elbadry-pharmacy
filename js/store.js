@@ -35,9 +35,12 @@ async function loadProducts() {
     }
 }
 
+let currentFilter = 'all';
+let currentSearch = '';
+
 function renderProducts(products) {
     if (products.length === 0) {
-        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات في هذا القسم حالياً.</p>`;
+        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
         return;
     }
 
@@ -47,7 +50,7 @@ function renderProducts(products) {
         const div = document.createElement('div');
         div.className = 'product-card';
         div.innerHTML = `
-            <img src="${prod.image}" alt="${prod.name}" class="product-img">
+            <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy">
             <div class="product-info">
                 <div class="product-category">${prod.category}</div>
                 <h3 class="product-name">${prod.name}</h3>
@@ -60,6 +63,21 @@ function renderProducts(products) {
     });
 
     updateGridActionsUI();
+}
+
+function applyFilters() {
+    let filtered = allProducts;
+    
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(p => p.category.includes(currentFilter) || currentFilter.includes(p.category));
+    }
+    
+    if (currentSearch.trim() !== '') {
+        const searchLower = currentSearch.toLowerCase().trim();
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
+    }
+    
+    renderProducts(filtered);
 }
 
 window.addFromGrid = function(id, name, price, img) {
@@ -115,15 +133,19 @@ if (storeFiltersContainer) {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
 
-                const filter = e.target.getAttribute('data-filter');
-                if (filter === 'all') {
-                    renderProducts(allProducts);
-                } else {
-                    const filtered = allProducts.filter(p => p.category.includes(filter) || filter.includes(p.category));
-                    renderProducts(filtered);
-                }
+                currentFilter = e.target.getAttribute('data-filter');
+                applyFilters();
             });
         });
+    });
+}
+
+// Search Logic
+const storeSearchInput = document.getElementById('storeSearchInput');
+if (storeSearchInput) {
+    storeSearchInput.addEventListener('input', (e) => {
+        currentSearch = e.target.value;
+        applyFilters();
     });
 }
 

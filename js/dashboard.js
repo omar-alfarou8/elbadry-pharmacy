@@ -228,6 +228,11 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
 
     categoriesList.innerHTML = '';
     productCategory.innerHTML = '';
+    
+    const excelCategorySelect = document.getElementById('excelCategorySelect');
+    if (excelCategorySelect) {
+        excelCategorySelect.innerHTML = '<option value="">اختر القسم للإكسيل...</option>';
+    }
 
     snapshot.forEach(docSnap => {
         const cat = docSnap.data();
@@ -247,6 +252,10 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         option.value = cat.name;
         option.textContent = cat.name;
         productCategory.appendChild(option);
+        
+        if (excelCategorySelect) {
+            excelCategorySelect.appendChild(option.cloneNode(true));
+        }
     });
 });
 
@@ -413,5 +422,82 @@ if (saveDeliveryBtn) {
             saveDeliveryBtn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ التعديلات';
             saveDeliveryBtn.disabled = false;
         }
+    });
+}
+
+// Excel Upload Logic
+const excelFileInput = document.getElementById('excelFileInput');
+if (excelFileInput) {
+    excelFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const excelCategorySelect = document.getElementById('excelCategorySelect');
+        const selectedCategory = excelCategorySelect ? excelCategorySelect.value : '';
+
+        if (!selectedCategory) {
+            alert('يرجى اختيار القسم أولاً قبل رفع ملف الإكسيل.');
+            excelFileInput.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // Convert to array of arrays
+                const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                if (rows.length < 2) {
+                    alert('الملف فارغ أو لا يحتوي على بيانات صحيحة.');
+                    return;
+                }
+
+                if (!confirm(`تم العثور على ${rows.length - 1} صف. هل تريد إضافة هذه المنتجات لقسم "${selectedCategory}"؟`)) {
+                    excelFileInput.value = '';
+                    return;
+                }
+
+                let successCount = 0;
+                
+                // Assuming first row is header, start from index 1
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length === 0) continue;
+                    
+                    const name = row[0]; // First column
+                    const priceRaw = row[2]; // Third column
+                    
+                    if (!name || isNaN(parseFloat(priceRaw))) {
+                        continue;
+                    }
+                    
+                    const price = parseFloat(priceRaw);
+                    
+                    const productData = {
+                        name: String(name).trim(),
+                        price: price,
+                        category: selectedCategory,
+                        image: 'logo.png', // Default image
+                        createdAt: new Date()
+                    };
+                    
+                    await addDoc(productsCol, productData);
+                    successCount++;
+                }
+                
+                alert(`تم بنجاح! إضافة ${successCount} منتج إلى قسم "${selectedCategory}".`);
+            } catch (error) {
+                console.error("Excel processing error: ", error);
+                alert("حدث خطأ أثناء معالجة ملف الإكسيل.");
+            } finally {
+                excelFileInput.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
     });
 }

@@ -52,6 +52,15 @@
 
     <!-- Main Content -->
     <main class="container" style="min-height: 50vh;">
+        
+        <!-- Search Bar -->
+        <div style="margin-bottom: 25px; margin-top: 30px; display: flex; justify-content: flex-start;">
+            <div style="position: relative; width: 100%; max-width: 400px;">
+                <input type="text" id="storeSearchInput" placeholder="ابحث عن دواء أو منتج..." style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 12px; border: 2px solid var(--border-color); font-family: inherit; font-size: 16px; transition: all 0.3s; outline: none;">
+                <i class="fa-solid fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 18px;"></i>
+            </div>
+        </div>
+
         <div class="store-filters" id="storeFiltersContainer">
             <button class="filter-btn active" data-filter="all">الكل</button>
             <!-- Dynamic filters here -->
