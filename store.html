@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="css/style.css?v=5">
 
     <!-- Store CSS -->
-    <link rel="stylesheet" href="css/store.css?v=2">
+    <link rel="stylesheet" href="css/store.css?v=3">
 </head>
 
 <body>
@@ -52,12 +52,14 @@
 
     <!-- Main Content -->
     <main class="container" style="min-height: 50vh;">
-        
+
         <!-- Search Bar -->
         <div style="margin-bottom: 25px; margin-top: 30px; display: flex; justify-content: flex-start;">
             <div style="position: relative; width: 100%; max-width: 400px;">
-                <input type="text" id="storeSearchInput" placeholder="ابحث عن دواء أو منتج..." style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 12px; border: 2px solid var(--border-color); font-family: inherit; font-size: 16px; transition: all 0.3s; outline: none;">
-                <i class="fa-solid fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 18px;"></i>
+                <input type="text" id="storeSearchInput" placeholder="ابحث عن دواء أو منتج..."
+                    style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 12px; border: 2px solid var(--border-color); font-family: inherit; font-size: 16px; transition: all 0.3s; outline: none;">
+                <i class="fa-solid fa-search"
+                    style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 18px;"></i>
             </div>
         </div>
 
@@ -113,11 +115,15 @@
                             الهاتف <span style="color:var(--error-color)">*</span></label>
                         <input type="tel" id="inlinePhone" required
                             style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; font-family: inherit; text-align:right;"
-                            dir="ltr" placeholder="01X XXXX XXXX" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            dir="ltr" placeholder="01X XXXX XXXX"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="display:block; margin-bottom: 5px; font-weight:bold; color:var(--text-gray); font-size:14px;">المحافظة <span style="color:var(--error-color)">*</span></label>
-                        <select id="inlineGovernorate" required style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; font-family: inherit; font-size: 15px; background: white;">
+                        <label
+                            style="display:block; margin-bottom: 5px; font-weight:bold; color:var(--text-gray); font-size:14px;">المحافظة
+                            <span style="color:var(--error-color)">*</span></label>
+                        <select id="inlineGovernorate" required
+                            style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; font-family: inherit; font-size: 15px; background: white;">
                             <option value="">-- اختر المحافظة --</option>
                             <option value="القاهرة">القاهرة</option>
                             <option value="الإسكندرية">الإسكندرية</option>
@@ -149,8 +155,11 @@
                         </select>
                     </div>
                     <div style="margin-bottom: 15px; display: none;" id="inlineRegionGroup">
-                        <label style="display:block; margin-bottom: 5px; font-weight:bold; color:var(--text-gray); font-size:14px;">المنطقة <span style="color:var(--error-color)">*</span></label>
-                        <select id="inlineRegionSelect" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; font-family: inherit; font-size: 15px; background: white;">
+                        <label
+                            style="display:block; margin-bottom: 5px; font-weight:bold; color:var(--text-gray); font-size:14px;">المنطقة
+                            <span style="color:var(--error-color)">*</span></label>
+                        <select id="inlineRegionSelect"
+                            style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 10px; font-family: inherit; font-size: 15px; background: white;">
                             <option value="">-- اختر المنطقة --</option>
                             <option value="بلبيس">بلبيس</option>
                             <option value="مناطق أخرى">مناطق أخرى (غير ذلك)</option>
@@ -179,7 +188,8 @@
                     <span style="font-size: 14px; font-weight: normal; color: var(--text-gray);">رسوم التوصيل:</span>
                     <span id="cartDeliveryVal" style="font-size: 16px; color: var(--primary-color);">0 ج.م</span>
                 </div>
-                <div class="cart-total" id="cartTotalDiv" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 5px;">
+                <div class="cart-total" id="cartTotalDiv"
+                    style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: 5px;">
                     <span>الإجمالي النهائي:</span>
                     <span id="cartTotalVal">0 ج.م</span>
                 </div>

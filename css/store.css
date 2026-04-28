@@ -306,3 +306,25 @@
             text-align: center;
             border-radius: 12px;
         }
+
+        /* Mobile Adjustments for Store */
+        @media (max-width: 768px) {
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            .product-img { height: 130px; }
+            .product-info { padding: 12px; }
+            .product-name { font-size: 14px; margin-bottom: 8px; }
+            .product-price { font-size: 16px; margin-bottom: 10px; }
+            .add-to-cart-btn { padding: 8px; font-size: 13px; }
+            .store-header h1 { font-size: 30px; }
+        }
+        
+        @media (max-width: 400px) {
+            .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .product-img { height: 110px; }
+            .product-name { font-size: 12px; }
+            .product-price { font-size: 14px; }
+            .add-to-cart-btn { font-size: 12px; padding: 6px; }
+        }
