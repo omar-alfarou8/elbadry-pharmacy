@@ -16,9 +16,14 @@ onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
 
 let cart = JSON.parse(localStorage.getItem('elbadry_cart')) || [];
 
+let filteredProducts = [];
+let displayedCount = 0;
+const PAGE_SIZE = 12;
+
 // Load products
 async function loadProducts() {
     try {
+        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل المنتجات...</p></div>`;
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
 
@@ -27,7 +32,7 @@ async function loadProducts() {
             allProducts.push({ id: doc.id, ...doc.data() });
         });
 
-        renderProducts(allProducts);
+        applyFilters();
 
     } catch (e) {
         console.error("Error loading products: ", e);
@@ -37,33 +42,6 @@ async function loadProducts() {
 
 let currentFilter = 'all';
 let currentSearch = '';
-
-function renderProducts(products) {
-    if (products.length === 0) {
-        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
-        return;
-    }
-
-    productsGrid.innerHTML = '';
-
-    products.forEach(prod => {
-        const div = document.createElement('div');
-        div.className = 'product-card';
-        div.innerHTML = `
-            <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy">
-            <div class="product-info">
-                <div class="product-category">${prod.category}</div>
-                <h3 class="product-name">${prod.name}</h3>
-                <div class="product-price">${prod.price} ج.م</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
-                </div>
-            </div>
-        `;
-        productsGrid.appendChild(div);
-    });
-
-    updateGridActionsUI();
-}
 
 function applyFilters() {
     let filtered = allProducts;
@@ -77,7 +55,62 @@ function applyFilters() {
         filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
     }
     
-    renderProducts(filtered);
+    filteredProducts = filtered;
+    displayedCount = 0;
+    productsGrid.innerHTML = '';
+    
+    const oldBtn = document.getElementById('loadMoreBtnContainer');
+    if (oldBtn) oldBtn.remove();
+    
+    loadMoreProducts();
+}
+
+function loadMoreProducts() {
+    const nextProducts = filteredProducts.slice(displayedCount, displayedCount + PAGE_SIZE);
+    
+    if (displayedCount === 0 && nextProducts.length === 0) {
+        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
+        return;
+    }
+
+    nextProducts.forEach(prod => {
+        const div = document.createElement('div');
+        div.className = 'product-card';
+        div.style.animation = 'fadeIn 0.5s ease forwards';
+        div.innerHTML = `
+            <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy">
+            <div class="product-info">
+                <div class="product-category">${prod.category}</div>
+                <h3 class="product-name">${prod.name}</h3>
+                <div class="product-price">${prod.price} ج.م</div>
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
+                </div>
+            </div>
+        `;
+        productsGrid.appendChild(div);
+    });
+
+    displayedCount += nextProducts.length;
+    updateGridActionsUI();
+
+    const oldBtn = document.getElementById('loadMoreBtnContainer');
+    if (oldBtn) oldBtn.remove();
+
+    if (displayedCount < filteredProducts.length) {
+        const btnContainer = document.createElement('div');
+        btnContainer.id = 'loadMoreBtnContainer';
+        btnContainer.style = 'grid-column: 1/-1; text-align: center; margin-top: 30px; margin-bottom: 20px;';
+        btnContainer.innerHTML = `<button id="loadMoreBtn" style="background: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-family: inherit; font-weight: bold; transition: opacity 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa-solid fa-angle-down" style="margin-left: 8px;"></i> عرض المزيد</button>`;
+        
+        productsGrid.appendChild(btnContainer);
+        
+        document.getElementById('loadMoreBtn').addEventListener('click', () => {
+            const btn = document.getElementById('loadMoreBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> جاري التحميل...`;
+            btn.style.opacity = '0.7';
+            setTimeout(loadMoreProducts, 300);
+        });
+    }
 }
 
 window.addFromGrid = function(id, name, price, img) {
