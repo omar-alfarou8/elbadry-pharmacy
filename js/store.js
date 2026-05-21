@@ -36,7 +36,13 @@ async function loadProducts() {
 
     } catch (e) {
         console.error("Error loading products: ", e);
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px;">حدث خطأ أثناء الاتصال بقاعدة البيانات. تأكد من إعداد Firebase بشكل صحيح.</div>`;
+        productsGrid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+                <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
+                <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
+                <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى إعادة تحميل الصفحة أو المحاولة لاحقاً.</div>
+            </div>
+        `;
     }
 }
 
