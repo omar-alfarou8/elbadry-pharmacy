@@ -7,6 +7,14 @@ import { supabase } from './supabase-config.js';
 onAuthStateChanged(auth, (user) => {
     if (!user) {
         window.location.href = 'admin.html';
+    } else {
+        // Securely show dashboard and hide loading screen
+        const loader = document.getElementById('authLoading');
+        const container = document.getElementById('dashboardContainer');
+        if (loader) loader.style.display = 'none';
+        if (container) {
+            container.style.setProperty('display', 'flex', 'important');
+        }
     }
 });
 

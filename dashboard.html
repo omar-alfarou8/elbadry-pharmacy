@@ -21,7 +21,13 @@
 </head>
 <body>
 
-    <div class="dashboard-container">
+    <!-- Loading Overlay for Security -->
+    <div id="authLoading" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Tajawal', sans-serif;">
+        <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 50px; color: #0b807a; margin-bottom: 20px;"></i>
+        <p style="font-size: 18px; font-weight: bold; color: #2d3748;">جاري التحقق من الصلاحيات...</p>
+    </div>
+
+    <div class="dashboard-container" id="dashboardContainer" style="display: none !important;">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
