@@ -84,10 +84,14 @@ function loadMoreProducts() {
         div.className = 'product-card';
         div.style.animation = 'fadeIn 0.5s ease forwards';
         div.innerHTML = `
-            <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy">
+            <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
+                <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+            </a>
             <div class="product-info">
                 <div class="product-category">${prod.category}</div>
-                <h3 class="product-name">${prod.name}</h3>
+                <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
+                    <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
+                </a>
                 <div class="product-price">${prod.price} ج.م</div>
                 <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
                 </div>

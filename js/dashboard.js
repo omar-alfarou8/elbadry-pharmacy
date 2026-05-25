@@ -30,6 +30,9 @@ const productsCol = collection(db, 'products');
 const ordersCol = collection(db, 'orders');
 const categoriesCol = collection(db, 'categories');
 
+// Local products cache
+let allProducts = {};
+
 // DOM Elements
 const productsTableBody = document.querySelector('#productsTable tbody');
 const totalProductsCount = document.getElementById('totalProductsCount');
@@ -96,6 +99,12 @@ productForm.addEventListener('submit', async (e) => {
     const price = document.getElementById('productPrice').value;
     const category = document.getElementById('productCategory').value;
     let image = document.getElementById('productImage').value || 'https://via.placeholder.com/150';
+    
+    // Additional fields
+    const description = document.getElementById('productDescription').value || '';
+    const usage = document.getElementById('productUsage').value || '';
+    const activeIngredients = document.getElementById('productActiveIngredients').value || '';
+    const warnings = document.getElementById('productWarnings').value || '';
 
     try {
         if (selectedProductImageFile) {
@@ -108,7 +117,16 @@ productForm.addEventListener('submit', async (e) => {
             image = publicUrlData.publicUrl;
         }
 
-        const productData = { name, price: Number(price), category, image };
+        const productData = { 
+            name, 
+            price: Number(price), 
+            category, 
+            image,
+            description,
+            usage,
+            activeIngredients,
+            warnings
+        };
 
         if (id) {
             await updateDoc(doc(db, 'products', id), productData);
@@ -125,6 +143,12 @@ productForm.addEventListener('submit', async (e) => {
         productImagePreviewContainer.style.display = 'none';
         document.getElementById('productImage').value = '';
         
+        // Reset extra fields
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productUsage').value = '';
+        document.getElementById('productActiveIngredients').value = '';
+        document.getElementById('productWarnings').value = '';
+        
     } catch (error) {
         console.error("Error saving product: ", error);
         alert('حدث خطأ أثناء إتمام العملية.');
@@ -135,14 +159,24 @@ productForm.addEventListener('submit', async (e) => {
 });
 
 // Global functions for inline HTML buttons
-window.editProduct = function(id, name, price, category, image) {
+window.editProduct = function(id) {
+    const prod = allProducts[id];
+    if (!prod) return;
+
     document.getElementById('productId').value = id;
-    document.getElementById('productName').value = name;
-    document.getElementById('productPrice').value = price;
-    document.getElementById('productCategory').value = category;
-    document.getElementById('productImage').value = image;
+    document.getElementById('productName').value = prod.name || '';
+    document.getElementById('productPrice').value = prod.price || '';
+    document.getElementById('productCategory').value = prod.category || '';
+    document.getElementById('productImage').value = prod.image || '';
+    
+    // Additional fields
+    document.getElementById('productDescription').value = prod.description || '';
+    document.getElementById('productUsage').value = prod.usage || '';
+    document.getElementById('productActiveIngredients').value = prod.activeIngredients || '';
+    document.getElementById('productWarnings').value = prod.warnings || '';
     
     // Show old image preview
+    const image = prod.image;
     if (image && image !== 'https://via.placeholder.com/150') {
         productImagePreview.src = image;
         productImagePreviewContainer.style.display = 'block';
@@ -285,10 +319,13 @@ if (addCategoryBtn) {
 onSnapshot(query(productsCol, orderBy('createdAt', 'desc')), (snapshot) => {
     productsTableBody.innerHTML = '';
     totalProductsCount.textContent = snapshot.size;
+    allProducts = {}; // Reset local cache
     
     snapshot.forEach((docSnap) => {
         const prod = docSnap.data();
         const id = docSnap.id;
+        allProducts[id] = prod; // Store product in local cache
+        
         const tr = document.createElement('tr');
         
         tr.innerHTML = `
@@ -297,7 +334,7 @@ onSnapshot(query(productsCol, orderBy('createdAt', 'desc')), (snapshot) => {
             <td>${prod.category}</td>
             <td>${prod.price} ج.م</td>
             <td>
-                <button class="action-btn edit-btn" onclick="editProduct('${id}', '${prod.name.replace(/'/g, "\\'")}', '${prod.price}', '${prod.category}', '${prod.image}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
                 <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;

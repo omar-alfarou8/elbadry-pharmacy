@@ -234,6 +234,27 @@
                         <img id="productImagePreview" src="" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                     </div>
                 </div>
+                
+                <!-- حقول تفاصيل الدواء الإضافية -->
+                <div class="input-group">
+                    <label>الوصف التفصيلي للدواء</label>
+                    <textarea id="productDescription" rows="3" placeholder="اكتب وصفاً مفصلاً للدواء، دواعي الاستعمال، إلخ..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                </div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>طريقة الاستخدام والجرعة</label>
+                        <textarea id="productUsage" rows="2" placeholder="الجرعة وكيفية الاستعمال..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>المواد الفعالة (التركيب)</label>
+                        <textarea id="productActiveIngredients" rows="2" placeholder="المكونات النشطة والتركيز..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>التحذيرات والآثار الجانبية</label>
+                    <textarea id="productWarnings" rows="2" placeholder="تحذيرات هامة، موانع الاستعمال، والآثار الجانبية المحتملة..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                </div>
+                
                 <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;" id="saveProductBtn">حفظ المنتج</button>
             </form>
         </div>
