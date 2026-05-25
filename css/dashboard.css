@@ -160,11 +160,31 @@ body { background-color: var(--bg-color); }
         }
         .modal.active { opacity: 1; visibility: visible; }
         .modal-content {
-            background: var(--white); width: 90%; max-width: 500px;
+            background: var(--white); width: 90%; max-width: 600px; /* Slightly wider modal for 2-column input rows */
             border-radius: 15px; padding: 30px;
             transform: scale(0.9); transition: 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
         .modal.active .modal-content { transform: scale(1); }
+        
+        /* Custom scrollbar for modal content */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.01);
+            border-radius: 10px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(11, 128, 122, 0.25);
+            border-radius: 10px;
+        }
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(11, 128, 122, 0.45);
+        }
+        
         .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px;}
         .close-modal { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-gray);}
         
