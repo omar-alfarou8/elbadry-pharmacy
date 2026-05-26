@@ -1,28 +1,32 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم - صيدلية البدري</title>
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
+        rel="stylesheet">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- Main CSS -->
     <link rel="stylesheet" href="css/style.css">
-    
+
     <!-- Dashboard CSS -->
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
+
 <body>
 
     <!-- Loading Overlay for Security -->
-    <div id="authLoading" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Tajawal', sans-serif;">
+    <div id="authLoading"
+        style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Tajawal', sans-serif;">
         <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 50px; color: #0b807a; margin-bottom: 20px;"></i>
         <p style="font-size: 18px; font-weight: bold; color: #2d3748;">جاري التحقق من الصلاحيات...</p>
     </div>
@@ -36,13 +40,15 @@
                     <div class="en-logo">ADMIN PANEL</div>
                 </a>
             </div>
-            
+
             <ul class="sidebar-menu">
-                <li><a href="#" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i> الرئيسية</a></li>
+                <li><a href="#" class="active" data-target="dashboard"><i class="fa-solid fa-chart-pie"></i>
+                        الرئيسية</a></li>
                 <li><a href="#" data-target="products"><i class="fa-solid fa-pills"></i> المنتجات</a></li>
                 <li><a href="#" data-target="orders"><i class="fa-solid fa-cart-arrow-down"></i> الطلبات</a></li>
                 <li><a href="#" data-target="delivery"><i class="fa-solid fa-truck-fast"></i> رسوم التوصيل</a></li>
-                <li style="margin-top: auto;"><a href="#" id="logoutBtn" style="color: var(--error-color)"><i class="fa-solid fa-sign-out-alt"></i> تسجيل خروج</a></li>
+                <li style="margin-top: auto;"><a href="#" id="logoutBtn" style="color: var(--error-color)"><i
+                            class="fa-solid fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
         </aside>
 
@@ -75,11 +81,12 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="panel">
                     <div class="panel-header">
                         <h3>أحدث الطلبات</h3>
-                        <button class="btn-outline" onclick="document.querySelector('[data-target=orders]').click()">عرض الكل</button>
+                        <button class="btn-outline" onclick="document.querySelector('[data-target=orders]').click()">عرض
+                            الكل</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="recentOrdersTable">
@@ -93,7 +100,9 @@
                             </thead>
                             <tbody>
                                 <!-- Dynamic orders here -->
-                                <tr><td colspan="4" style="text-align: center;">جاري التحميل...</td></tr>
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">جاري التحميل...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -107,17 +116,24 @@
                         <h3>إدارة المنتجات</h3>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                             <!-- Excel Upload UI -->
-                            <div style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.02); padding: 5px; border-radius: 10px; border: 1px solid var(--border-color);">
-                                <select id="excelCategorySelect" style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit;">
+                            <div
+                                style="display: flex; gap: 5px; align-items: center; background: rgba(0,0,0,0.02); padding: 5px; border-radius: 10px; border: 1px solid var(--border-color);">
+                                <select id="excelCategorySelect"
+                                    style="padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit;">
                                     <option value="">اختر القسم للإكسيل...</option>
                                 </select>
-                                <label for="excelFileInput" class="btn-primary" style="margin: 0; cursor: pointer; padding: 8px 15px; border-radius: 6px;">
+                                <label for="excelFileInput" class="btn-primary"
+                                    style="margin: 0; cursor: pointer; padding: 8px 15px; border-radius: 6px;">
                                     <i class="fa-solid fa-file-excel"></i> رفع إكسيل
                                 </label>
-                                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+                                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv"
+                                    style="display: none;">
                             </div>
-                            <button class="btn-outline" id="openCategoriesModal" style="border-radius: 10px; padding: 10px 15px;"><i class="fa-solid fa-tags"></i> إدارة الأقسام</button>
-                            <button class="btn-primary" id="openAddProductModal"><i class="fa-solid fa-plus"></i> إضافة منتج</button>
+                            <button class="btn-outline" id="openCategoriesModal"
+                                style="border-radius: 10px; padding: 10px 15px;"><i class="fa-solid fa-tags"></i> إدارة
+                                الأقسام</button>
+                            <button class="btn-primary" id="openAddProductModal"><i class="fa-solid fa-plus"></i> إضافة
+                                منتج</button>
                         </div>
                     </div>
                     <div style="overflow-x: auto;">
@@ -138,7 +154,7 @@
                     </div>
                 </div>
             </section>
-            
+
             <!-- Orders Section -->
             <section id="orders" class="dashboard-section">
                 <div class="panel">
@@ -170,7 +186,8 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3>إدارة رسوم التوصيل</h3>
-                        <button class="btn-primary" id="saveDeliveryBtn" style="padding: 10px 20px;"><i class="fa-solid fa-save"></i> حفظ التعديلات</button>
+                        <button class="btn-primary" id="saveDeliveryBtn" style="padding: 10px 20px;"><i
+                                class="fa-solid fa-save"></i> حفظ التعديلات</button>
                     </div>
                     <div style="overflow-x: auto;">
                         <table id="deliveryTable">
@@ -182,7 +199,9 @@
                             </thead>
                             <tbody>
                                 <!-- Dynamic rows here -->
-                                <tr><td colspan="2" style="text-align: center;">جاري التحميل...</td></tr>
+                                <tr>
+                                    <td colspan="2" style="text-align: center;">جاري التحميل...</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -212,54 +231,72 @@
                     </div>
                     <div class="input-group">
                         <label>القسم <span class="required">*</span></label>
-                        <select id="productCategory" style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;" required>
+                        <select id="productCategory"
+                            style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"
+                            required>
                             <!-- Filled dynamically from Firebase -->
                         </select>
                     </div>
                 </div>
                 <div class="input-group">
                     <label>صورة المنتج</label>
-                    <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--border-color);">
+                    <div
+                        style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--border-color);">
                         <div>
-                            <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الأول) رفع صورة من جهازك:</label>
-                            <input type="file" id="productImageFile" accept="image/*" style="width: 100%; padding: 8px; border-radius: 8px; font-family: inherit; background: white; border: 1px solid var(--border-color); cursor: pointer;">
+                            <label
+                                style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار
+                                الأول) رفع صورة من جهازك:</label>
+                            <input type="file" id="productImageFile" accept="image/*"
+                                style="width: 100%; padding: 8px; border-radius: 8px; font-family: inherit; background: white; border: 1px solid var(--border-color); cursor: pointer;">
                         </div>
-                        <div style="text-align: center; color: var(--text-gray); font-size: 13px; font-weight: bold;">أو</div>
+                        <div style="text-align: center; color: var(--text-gray); font-size: 13px; font-weight: bold;">أو
+                        </div>
                         <div>
-                            <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الثاني) رابط لصورة على الإنترنت (URL):</label>
-                            <input type="url" id="productImage" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
+                            <label
+                                style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار
+                                الثاني) رابط لصورة على الإنترنت (URL):</label>
+                            <input type="url" id="productImage" placeholder="https://example.com/image.jpg"
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
                         </div>
                     </div>
                     <div id="productImagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
-                        <img id="productImagePreview" src="" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <img id="productImagePreview" src=""
+                            style="max-height: 120px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                     </div>
                 </div>
-                
+
                 <!-- حقول تفاصيل الدواء الإضافية -->
                 <div class="input-group">
                     <label>الوصف التفصيلي للدواء</label>
-                    <textarea id="productDescription" rows="3" placeholder="اكتب وصفاً مفصلاً للدواء، دواعي الاستعمال، إلخ..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                    <textarea id="productDescription" rows="3"
+                        placeholder="اكتب وصفاً مفصلاً للدواء، دواعي الاستعمال، إلخ..."
+                        style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">
                         <label>طريقة الاستخدام والجرعة</label>
-                        <textarea id="productUsage" rows="2" placeholder="الجرعة وكيفية الاستعمال..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                        <textarea id="productUsage" rows="2" placeholder="الجرعة وكيفية الاستعمال..."
+                            style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label>المواد الفعالة (التركيب)</label>
-                        <textarea id="productActiveIngredients" rows="2" placeholder="المكونات النشطة والتركيز..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                        <textarea id="productActiveIngredients" rows="2" placeholder="المكونات النشطة والتركيز..."
+                            style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
                     </div>
                 </div>
                 <div class="input-group">
                     <label>التحذيرات والآثار الجانبية</label>
-                    <textarea id="productWarnings" rows="2" placeholder="تحذيرات هامة، موانع الاستعمال، والآثار الجانبية المحتملة..." style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
+                    <textarea id="productWarnings" rows="2"
+                        placeholder="تحذيرات هامة، موانع الاستعمال، والآثار الجانبية المحتملة..."
+                        style="width: 100%; padding: 16px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 16px;"></textarea>
                 </div>
-                
-                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;" id="saveProductBtn">حفظ المنتج</button>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;" id="saveProductBtn">حفظ
+                    المنتج</button>
             </form>
         </div>
     </div>
-    
+
     <!-- Order Details Modal -->
     <div class="modal" id="orderDetailsModal">
         <div class="modal-content">
@@ -270,7 +307,8 @@
             <div id="orderDetailsContent" style="line-height: 1.8;">
                 <!-- Filled dynamically -->
             </div>
-            <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;" id="orderActionDiv">
+            <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;"
+                id="orderActionDiv">
                 <!-- Action Buttons -->
             </div>
         </div>
@@ -284,7 +322,8 @@
                 <button class="close-modal" id="closeCategoriesModal"><i class="fa-solid fa-times"></i></button>
             </div>
             <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                <input type="text" id="newCategoryName" placeholder="اسم القسم (مثال: عناية بالبشرة)" style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                <input type="text" id="newCategoryName" placeholder="اسم القسم (مثال: عناية بالبشرة)"
+                    style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
                 <button class="btn-primary" id="addCategoryBtn" style="padding: 0 20px;">إضافة</button>
             </div>
             <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0;">
@@ -300,4 +339,5 @@
     <script type="module" src="js/dashboard.js?v=5"></script>
     <script src="js/dashboard-ui.js?v=4"></script>
 </body>
+
 </html>

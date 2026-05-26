@@ -51,29 +51,29 @@ let currentSearch = '';
 
 function applyFilters() {
     let filtered = allProducts;
-    
+
     if (currentFilter !== 'all') {
         filtered = filtered.filter(p => p.category.includes(currentFilter) || currentFilter.includes(p.category));
     }
-    
+
     if (currentSearch.trim() !== '') {
         const searchLower = currentSearch.toLowerCase().trim();
         filtered = filtered.filter(p => p.name.toLowerCase().includes(searchLower));
     }
-    
+
     filteredProducts = filtered;
     displayedCount = 0;
     productsGrid.innerHTML = '';
-    
+
     const oldBtn = document.getElementById('loadMoreBtnContainer');
     if (oldBtn) oldBtn.remove();
-    
+
     loadMoreProducts();
 }
 
 function loadMoreProducts() {
     const nextProducts = filteredProducts.slice(displayedCount, displayedCount + PAGE_SIZE);
-    
+
     if (displayedCount === 0 && nextProducts.length === 0) {
         productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
         return;
@@ -111,9 +111,9 @@ function loadMoreProducts() {
         btnContainer.id = 'loadMoreBtnContainer';
         btnContainer.style = 'grid-column: 1/-1; text-align: center; margin-top: 30px; margin-bottom: 20px;';
         btnContainer.innerHTML = `<button id="loadMoreBtn" style="background: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-family: inherit; font-weight: bold; transition: opacity 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa-solid fa-angle-down" style="margin-left: 8px;"></i> عرض المزيد</button>`;
-        
+
         productsGrid.appendChild(btnContainer);
-        
+
         document.getElementById('loadMoreBtn').addEventListener('click', () => {
             const btn = document.getElementById('loadMoreBtn');
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> جاري التحميل...`;
@@ -123,7 +123,7 @@ function loadMoreProducts() {
     }
 }
 
-window.addFromGrid = function(id, name, price, img) {
+window.addFromGrid = function (id, name, price, img) {
     addToCart({ id, name, price, image: img });
 };
 
@@ -132,7 +132,7 @@ function updateGridActionsUI() {
     containers.forEach(container => {
         const id = container.id.replace('product-action-', '');
         const itemInCart = cart.find(i => i.id === id);
-        
+
         if (itemInCart) {
             container.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(11, 128, 122, 0.1); border-radius: 8px; padding: 5px; margin-top: 10px;">
@@ -160,7 +160,7 @@ const storeFiltersContainer = document.getElementById('storeFiltersContainer');
 if (storeFiltersContainer) {
     onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
         storeFiltersContainer.innerHTML = '<button class="filter-btn active" data-filter="all">الكل</button>';
-        
+
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
             const btn = document.createElement('button');
@@ -252,7 +252,7 @@ function updateCartUI() {
         cartTotalVal.textContent = '0 ج.م';
         goToCheckoutBtn.disabled = true;
         goToCheckoutBtn.style.opacity = '0.5';
-        
+
         updateCartDeliveryUI(0);
         if (typeof updateGridActionsUI === 'function') {
             updateGridActionsUI();
@@ -285,7 +285,7 @@ function updateCartUI() {
 
     cartItemsContainer.innerHTML = html;
     updateCartDeliveryUI(totalPrice);
-    
+
     if (typeof updateGridActionsUI === 'function') {
         updateGridActionsUI();
     }
@@ -296,7 +296,7 @@ function updateCartDeliveryUI(baseTotal = null) {
     if (currentTotal === null) {
         currentTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     }
-    
+
     const cartItemsTotalVal = document.getElementById('cartItemsTotalVal');
     const cartDeliveryDiv = document.getElementById('cartDeliveryDiv');
     const cartDeliveryVal = document.getElementById('cartDeliveryVal');
@@ -310,17 +310,17 @@ function updateCartDeliveryUI(baseTotal = null) {
     cartItemsTotalVal.textContent = `${currentTotal} ج.م`;
 
     let selectedGov = inlineGov ? inlineGov.value : '';
-    
+
     if (selectedGov === 'الشرقية') {
         if (inlineRegionGroup) inlineRegionGroup.style.display = 'block';
         if (inlineRegionSelect) inlineRegionSelect.required = true;
-        
+
         if (inlineRegionSelect && inlineRegionSelect.value === 'بلبيس') {
             selectedGov = 'الشرقية (بلبيس)';
         } else if (inlineRegionSelect && inlineRegionSelect.value === 'مناطق أخرى') {
             selectedGov = 'الشرقية (مناطق أخرى)';
         } else {
-            selectedGov = null; 
+            selectedGov = null;
         }
     } else {
         if (inlineRegionGroup) inlineRegionGroup.style.display = 'none';
@@ -328,14 +328,14 @@ function updateCartDeliveryUI(baseTotal = null) {
     }
 
     let deliveryFee = 0;
-    
+
     if (selectedGov && deliveryFees[selectedGov] !== undefined) {
         deliveryFee = deliveryFees[selectedGov];
         cartDeliveryDiv.style.display = 'flex';
         cartDeliveryVal.textContent = `${deliveryFee} ج.م`;
     } else if (selectedGov) {
         // Fallback default
-        deliveryFee = 50; 
+        deliveryFee = 50;
         cartDeliveryDiv.style.display = 'flex';
         cartDeliveryVal.textContent = `${deliveryFee} ج.م`;
     } else {
@@ -405,11 +405,11 @@ submitInlineOrderBtn.addEventListener('click', async (e) => {
 
     let selectedGov = document.getElementById('inlineGovernorate').value;
     const inlineRegionSelectElt = document.getElementById('inlineRegionSelect');
-    
+
     if (selectedGov === 'الشرقية' && inlineRegionSelectElt && inlineRegionSelectElt.value) {
         selectedGov = `الشرقية (${inlineRegionSelectElt.value})`;
     }
-    
+
     const deliveryFee = deliveryFees[selectedGov] !== undefined ? deliveryFees[selectedGov] : (selectedGov ? 50 : 0);
     const finalTotal = calculatedTotal + deliveryFee;
 
@@ -433,11 +433,11 @@ submitInlineOrderBtn.addEventListener('click', async (e) => {
         await addDoc(collection(db, "orders"), orderData);
 
         inlineForm.style.display = 'none';
-        
+
         // Hide the footer containing the totals and action buttons
         const cartFooter = document.querySelector('.cart-footer');
         if (cartFooter) cartFooter.style.display = 'none';
-        
+
         const successDiv = document.createElement('div');
         successDiv.id = "successOrderSummary";
         successDiv.innerHTML = `
@@ -448,9 +448,9 @@ submitInlineOrderBtn.addEventListener('click', async (e) => {
                 <button id="closeSuccessBtn" style="background: var(--primary-color); color: white; border: none; padding: 12px; border-radius: 10px; font-family: inherit; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.3s;">إغلاق والعودة للمتجر</button>
             </div>
         `;
-        
+
         cartCheckoutContainer.appendChild(successDiv);
-        
+
         document.getElementById('closeSuccessBtn').addEventListener('click', () => {
             cart = [];
             saveCart();
@@ -458,9 +458,9 @@ submitInlineOrderBtn.addEventListener('click', async (e) => {
             inlineForm.reset();
             inlineForm.style.display = 'block';
             successDiv.remove();
-            
+
             if (cartFooter) cartFooter.style.display = 'block';
-            
+
             cartModal.classList.remove('active');
             document.getElementById('backToCartBtn').click();
             inlineBtnText.style.display = 'inline-block';

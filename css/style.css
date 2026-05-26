@@ -1,22 +1,28 @@
 /* CSS Variables based on El Badry Pharmacy branding */
 :root {
-    --primary-color: #0b807a;       /* Teal/Dark Cyan */
-    --primary-light: #12b0a9;       /* Lighter Teal */
-    --primary-dark: #075e5a;        /* Darker Teal */
-    --secondary-color: #0a2442;     /* Navy Blue */
-    --secondary-light: #16365c;     /* Lighter Navy */
-    
-    --bg-color: #f2fafa;            /* Very light cyan/white */
+    --primary-color: #0b807a;
+    /* Teal/Dark Cyan */
+    --primary-light: #12b0a9;
+    /* Lighter Teal */
+    --primary-dark: #075e5a;
+    /* Darker Teal */
+    --secondary-color: #0a2442;
+    /* Navy Blue */
+    --secondary-light: #16365c;
+    /* Lighter Navy */
+
+    --bg-color: #f2fafa;
+    /* Very light cyan/white */
     --white: #ffffff;
     --text-dark: #1a2a3a;
     --text-gray: #4a5a6a;
     --border-color: #d1e5e4;
-    
+
     --success-color: #059669;
     --error-color: #dc2626;
-    
+
     --font-family: 'Tajawal', sans-serif;
-    
+
     /* Modern Glassmorphism variables */
     --glass-bg: rgba(255, 255, 255, 0.85);
     --glass-border: rgba(11, 128, 122, 0.2);
@@ -29,7 +35,8 @@
     padding: 0;
 }
 
-html, body {
+html,
+body {
     max-width: 100%;
     overflow-x: hidden;
 }
@@ -88,7 +95,7 @@ a {
     position: sticky;
     top: 0;
     z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
     transition: all 0.3s ease;
 }
 
@@ -150,18 +157,19 @@ nav a:not(.btn-primary)::after {
     transition: width 0.3s ease;
 }
 
-nav a:hover:not(.btn-primary)::after, 
+nav a:hover:not(.btn-primary)::after,
 nav a.active:not(.btn-primary)::after {
     width: 100%;
 }
 
-nav a:hover:not(.btn-primary), 
+nav a:hover:not(.btn-primary),
 nav a.active:not(.btn-primary) {
     color: var(--primary-color);
 }
 
 /* Buttons */
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -228,9 +236,17 @@ nav a.active:not(.btn-primary) {
 }
 
 @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(11, 128, 122, 0.6); }
-    70% { box-shadow: 0 0 0 15px rgba(11, 128, 122, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(11, 128, 122, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(11, 128, 122, 0.6);
+    }
+
+    70% {
+        box-shadow: 0 0 0 15px rgba(11, 128, 122, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(11, 128, 122, 0);
+    }
 }
 
 /* Hero Section */
@@ -243,9 +259,11 @@ nav a.active:not(.btn-primary) {
 .hero::before {
     content: '';
     position: absolute;
-    top: -50%; right: -20%;
-    width: 800px; height: 800px;
-    background: radial-gradient(circle, rgba(11,128,122,0.08) 0%, rgba(255,255,255,0) 70%);
+    top: -50%;
+    right: -20%;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(11, 128, 122, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
     z-index: -1;
 }
@@ -290,8 +308,10 @@ nav a.active:not(.btn-primary) {
 .text-content h2 .highlight::after {
     content: '';
     position: absolute;
-    bottom: 5px; right: 0;
-    width: 100%; height: 15px;
+    bottom: 5px;
+    right: 0;
+    width: 100%;
+    height: 15px;
     background-color: rgba(11, 128, 122, 0.2);
     z-index: -1;
     border-radius: 4px;
@@ -320,7 +340,8 @@ nav a.active:not(.btn-primary) {
 .image-content::after {
     content: '';
     position: absolute;
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     background: radial-gradient(circle, var(--primary-light) 0%, transparent 60%);
     opacity: 0.1;
     scale: 1.5;
@@ -340,9 +361,17 @@ nav a.active:not(.btn-primary) {
 }
 
 @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-    100% { transform: translateY(0px); }
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
 }
 
 /* Glassmorphism Cards */
@@ -403,7 +432,8 @@ nav a.active:not(.btn-primary) {
 }
 
 .feature-card .icon-wrapper {
-    width: 80px; height: 80px;
+    width: 80px;
+    height: 80px;
     margin: 0 auto 25px;
     background: linear-gradient(135deg, rgba(11, 128, 122, 0.1), rgba(11, 128, 122, 0.05));
     border-radius: 20px;
@@ -453,7 +483,7 @@ nav a.active:not(.btn-primary) {
     color: var(--primary-color);
 }
 
-.contact-info > p {
+.contact-info>p {
     font-size: 18px;
     color: var(--text-gray);
     margin-bottom: 40px;
@@ -467,7 +497,8 @@ nav a.active:not(.btn-primary) {
 }
 
 .info-icon {
-    width: 50px; height: 50px;
+    width: 50px;
+    height: 50px;
     background-color: rgba(11, 128, 122, 0.1);
     color: var(--primary-color);
     border-radius: 12px;
@@ -507,10 +538,10 @@ nav a.active:not(.btn-primary) {
 
 .map-placeholder {
     text-align: center;
-    background: rgba(255,255,255,0.9);
+    background: rgba(255, 255, 255, 0.9);
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 .map-icon {
@@ -562,8 +593,15 @@ nav a.active:not(.btn-primary) {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .input-row {
@@ -629,8 +667,9 @@ nav a.active:not(.btn-primary) {
 
 .spinner {
     display: inline-block;
-    width: 20px; height: 20px;
-    border: 3px solid rgba(255,255,255,0.3);
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: #fff;
     animation: spin 1s ease-in-out infinite;
@@ -638,7 +677,9 @@ nav a.active:not(.btn-primary) {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .alert {
@@ -652,8 +693,13 @@ nav a.active:not(.btn-primary) {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .alert-success {
@@ -703,7 +749,7 @@ footer {
 .footer-bottom {
     width: 100%;
     padding-top: 30px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-bottom p {
@@ -711,7 +757,9 @@ footer {
     font-size: 14px;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 /* Responsive */
 @media (max-width: 992px) {
@@ -719,24 +767,24 @@ footer {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .hero-logo-img {
         max-width: 200px;
         margin-top: 20px;
     }
-    
+
     .text-content h2 {
         font-size: 45px;
     }
-    
+
     .text-content p {
         margin: 0 auto 30px;
     }
-    
+
     .actions {
         justify-content: center;
     }
-    
+
     .contact-card {
         flex-direction: column;
     }
@@ -747,20 +795,20 @@ footer {
         flex-direction: column;
         gap: 15px;
     }
-    
+
     .input-row {
         flex-direction: column;
         gap: 0;
     }
-    
+
     .text-content h2 {
         font-size: 38px;
     }
-    
+
     .form-wrapper {
         padding: 30px 20px;
     }
-    
+
     .contact-info {
         padding: 40px 20px;
     }

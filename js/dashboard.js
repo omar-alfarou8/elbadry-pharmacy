@@ -71,7 +71,7 @@ if (productImageFile) {
         if (file) {
             selectedProductImageFile = file;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 productImagePreview.src = e.target.result;
                 productImagePreviewContainer.style.display = 'block';
             }
@@ -99,7 +99,7 @@ productForm.addEventListener('submit', async (e) => {
     const price = document.getElementById('productPrice').value;
     const category = document.getElementById('productCategory').value;
     let image = document.getElementById('productImage').value || 'https://via.placeholder.com/150';
-    
+
     // Additional fields
     const description = document.getElementById('productDescription').value || '';
     const usage = document.getElementById('productUsage').value || '';
@@ -110,17 +110,17 @@ productForm.addEventListener('submit', async (e) => {
         if (selectedProductImageFile) {
             const fileName = Date.now() + '_' + selectedProductImageFile.name;
             const { data, error } = await supabase.storage.from('pharmacy_images').upload('products/' + fileName, selectedProductImageFile);
-            
+
             if (error) throw error;
-            
+
             const { data: publicUrlData } = supabase.storage.from('pharmacy_images').getPublicUrl('products/' + fileName);
             image = publicUrlData.publicUrl;
         }
 
-        const productData = { 
-            name, 
-            price: Number(price), 
-            category, 
+        const productData = {
+            name,
+            price: Number(price),
+            category,
             image,
             description,
             usage,
@@ -136,19 +136,19 @@ productForm.addEventListener('submit', async (e) => {
         }
         document.getElementById('productModal').classList.remove('active');
         productForm.reset();
-        
+
         // Reset image selection
         selectedProductImageFile = null;
-        if(productImageFile) productImageFile.value = '';
+        if (productImageFile) productImageFile.value = '';
         productImagePreviewContainer.style.display = 'none';
         document.getElementById('productImage').value = '';
-        
+
         // Reset extra fields
         document.getElementById('productDescription').value = '';
         document.getElementById('productUsage').value = '';
         document.getElementById('productActiveIngredients').value = '';
         document.getElementById('productWarnings').value = '';
-        
+
     } catch (error) {
         console.error("Error saving product: ", error);
         alert('حدث خطأ أثناء إتمام العملية.');
@@ -159,7 +159,7 @@ productForm.addEventListener('submit', async (e) => {
 });
 
 // Global functions for inline HTML buttons
-window.editProduct = function(id) {
+window.editProduct = function (id) {
     const prod = allProducts[id];
     if (!prod) return;
 
@@ -168,13 +168,13 @@ window.editProduct = function(id) {
     document.getElementById('productPrice').value = prod.price || '';
     document.getElementById('productCategory').value = prod.category || '';
     document.getElementById('productImage').value = prod.image || '';
-    
+
     // Additional fields
     document.getElementById('productDescription').value = prod.description || '';
     document.getElementById('productUsage').value = prod.usage || '';
     document.getElementById('productActiveIngredients').value = prod.activeIngredients || '';
     document.getElementById('productWarnings').value = prod.warnings || '';
-    
+
     // Show old image preview
     const image = prod.image;
     if (image && image !== 'https://via.placeholder.com/150') {
@@ -183,26 +183,26 @@ window.editProduct = function(id) {
     } else {
         productImagePreviewContainer.style.display = 'none';
     }
-    
+
     // Clear file selection cache
     selectedProductImageFile = null;
-    if(productImageFile) productImageFile.value = '';
-    
+    if (productImageFile) productImageFile.value = '';
+
     document.getElementById('modalTitle').textContent = 'تعديل منتج';
     document.getElementById('productModal').classList.add('active');
 };
 
-window.deleteProduct = async function(id) {
+window.deleteProduct = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
         await deleteDoc(doc(db, 'products', id));
     }
 };
 
-window.viewOrder = function(id, name, phone, governorate, address, items, total, status, prescriptionUrl) {
+window.viewOrder = function (id, name, phone, governorate, address, items, total, status, prescriptionUrl) {
     const modal = document.getElementById('orderDetailsModal');
     const content = document.getElementById('orderDetailsContent');
     const actionDiv = document.getElementById('orderActionDiv');
-    
+
     let itemsHtml = ``;
     try {
         let parsedItems = JSON.parse(decodeURIComponent(items));
@@ -211,10 +211,10 @@ window.viewOrder = function(id, name, phone, governorate, address, items, total,
             itemsHtml += `<li>${item.name} - الكمية: ${item.quantity} - ${item.price} ج.م</li>`;
         });
         itemsHtml += `</ul>`;
-    } catch(e) {
+    } catch (e) {
         itemsHtml = `<div style="white-space: pre-wrap; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 5px; border: 1px solid var(--border-color);">${decodeURIComponent(items)}</div>`; // Fallback for textual strings
     }
-    
+
     let prescriptionHtml = '';
     if (prescriptionUrl && prescriptionUrl !== 'undefined' && prescriptionUrl !== 'null' && prescriptionUrl.length > 5) {
         prescriptionHtml = `
@@ -247,12 +247,12 @@ window.viewOrder = function(id, name, phone, governorate, address, items, total,
     modal.classList.add('active');
 };
 
-window.markOrderDone = async function(id) {
+window.markOrderDone = async function (id) {
     await updateDoc(doc(db, 'orders', id), { status: 'done' });
     document.getElementById('orderDetailsModal').classList.remove('active');
 };
 
-window.deleteCategory = async function(id) {
+window.deleteCategory = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا القسم؟ (لن يتم حذف المنتجات الموجودة به تلقائياً)')) {
         await deleteDoc(doc(db, 'categories', id));
     }
@@ -270,7 +270,7 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
 
     categoriesList.innerHTML = '';
     productCategory.innerHTML = '';
-    
+
     const excelCategorySelect = document.getElementById('excelCategorySelect');
     if (excelCategorySelect) {
         excelCategorySelect.innerHTML = '<option value="">اختر القسم للإكسيل...</option>';
@@ -279,7 +279,7 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
     snapshot.forEach(docSnap => {
         const cat = docSnap.data();
         const id = docSnap.id;
-        
+
         // Modal List
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
@@ -294,7 +294,7 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         option.value = cat.name;
         option.textContent = cat.name;
         productCategory.appendChild(option);
-        
+
         if (excelCategorySelect) {
             excelCategorySelect.appendChild(option.cloneNode(true));
         }
@@ -320,14 +320,14 @@ onSnapshot(query(productsCol, orderBy('createdAt', 'desc')), (snapshot) => {
     productsTableBody.innerHTML = '';
     totalProductsCount.textContent = snapshot.size;
     allProducts = {}; // Reset local cache
-    
+
     snapshot.forEach((docSnap) => {
         const prod = docSnap.data();
         const id = docSnap.id;
         allProducts[id] = prod; // Store product in local cache
-        
+
         const tr = document.createElement('tr');
-        
+
         tr.innerHTML = `
             <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
             <td><strong>${prod.name}</strong></td>
@@ -347,17 +347,17 @@ onSnapshot(query(ordersCol, orderBy('createdAt', 'desc')), (snapshot) => {
     recentOrdersBody.innerHTML = '';
     allOrdersBody.innerHTML = '';
     totalOrdersCount.textContent = snapshot.size;
-    
+
     let count = 0;
     snapshot.forEach((docSnap) => {
         const order = docSnap.data();
         const id = docSnap.id;
-        const statusBadge = order.status === 'done' 
-            ? `<span class="status-badge status-done">مكتمل</span>` 
+        const statusBadge = order.status === 'done'
+            ? `<span class="status-badge status-done">مكتمل</span>`
             : `<span class="status-badge status-new">جديد</span>`;
-            
+
         const dateObj = order.createdAt ? order.createdAt.toDate() : new Date();
-        const dateStr = dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+        const dateStr = dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
         let itemsToPass = order.orderDetails || "لا توجد تفاصيل";
         if (order.items && order.items.length > 0) {
@@ -422,13 +422,13 @@ onSnapshot(deliverySettingsDoc, async (docSnap) => {
         const defaultFees = {};
         governoratesList.forEach(gov => defaultFees[gov] = 50);
         await setDoc(deliverySettingsDoc, { fees: defaultFees }).catch(console.error);
-        return; 
+        return;
     }
 
     currentDeliveryFees = docSnap.data().fees || {};
-    if(deliveryTableBody) {
+    if (deliveryTableBody) {
         deliveryTableBody.innerHTML = '';
-        
+
         governoratesList.forEach(gov => {
             const fee = currentDeliveryFees[gov] !== undefined ? currentDeliveryFees[gov] : 50;
             const tr = document.createElement('tr');
@@ -447,7 +447,7 @@ if (saveDeliveryBtn) {
     saveDeliveryBtn.addEventListener('click', async () => {
         saveDeliveryBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
         saveDeliveryBtn.disabled = true;
-        
+
         const inputs = document.querySelectorAll('.delivery-fee-input');
         const updatedFees = {};
         inputs.forEach(input => {
@@ -487,16 +487,16 @@ if (excelFileInput) {
         }
 
         const reader = new FileReader();
-        reader.onload = async function(e) {
+        reader.onload = async function (e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+                const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                
+
                 // Convert to array of arrays
-                const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
                 if (rows.length < 2) {
                     alert('الملف فارغ أو لا يحتوي على بيانات صحيحة.');
                     return;
@@ -508,21 +508,21 @@ if (excelFileInput) {
                 }
 
                 let successCount = 0;
-                
+
                 // Assuming first row is header, start from index 1
                 for (let i = 1; i < rows.length; i++) {
                     const row = rows[i];
                     if (!row || row.length === 0) continue;
-                    
+
                     const name = row[0]; // First column
                     const priceRaw = row[2]; // Third column
-                    
+
                     if (!name || isNaN(parseFloat(priceRaw))) {
                         continue;
                     }
-                    
+
                     const price = parseFloat(priceRaw);
-                    
+
                     const productData = {
                         name: String(name).trim(),
                         price: price,
@@ -530,11 +530,11 @@ if (excelFileInput) {
                         image: 'logo.png', // Default image
                         createdAt: new Date()
                     };
-                    
+
                     await addDoc(productsCol, productData);
                     successCount++;
                 }
-                
+
                 alert(`تم بنجاح! إضافة ${successCount} منتج إلى قسم "${selectedCategory}".`);
             } catch (error) {
                 console.error("Excel processing error: ", error);
