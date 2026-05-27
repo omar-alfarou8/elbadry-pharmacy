@@ -1,6 +1,6 @@
 import { auth, db, storage } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, limit, startAfter, endBefore, limitToLast, where, startAt, endAt, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 // Check Auth state immediately
@@ -15,6 +15,8 @@ onAuthStateChanged(auth, (user) => {
         if (container) {
             container.style.setProperty('display', 'flex', 'important');
         }
+        loadProducts('init');
+        updateTotalProductsCount();
     }
 });
 
@@ -146,6 +148,9 @@ productForm.addEventListener('submit', async (e) => {
         document.getElementById('productActiveIngredients').value = '';
         document.getElementById('productWarnings').value = '';
 
+        await loadProducts('init');
+        await updateTotalProductsCount();
+
     } catch (error) {
         console.error("Error saving product: ", error);
         alert('حدث خطأ أثناء إتمام العملية.');
@@ -192,6 +197,8 @@ window.editProduct = function (id) {
 window.deleteProduct = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
         await deleteDoc(doc(db, 'products', id));
+        await loadProducts('init');
+        await updateTotalProductsCount();
     }
 };
 
@@ -273,6 +280,11 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         excelCategorySelect.innerHTML = '<option value="">اختر القسم للإكسيل...</option>';
     }
 
+    const productCategoryFilter = document.getElementById('productCategoryFilter');
+    if (productCategoryFilter) {
+        productCategoryFilter.innerHTML = '<option value="">كل الأقسام</option>';
+    }
+
     snapshot.forEach(docSnap => {
         const cat = docSnap.data();
         const id = docSnap.id;
@@ -295,6 +307,10 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         if (excelCategorySelect) {
             excelCategorySelect.appendChild(option.cloneNode(true));
         }
+
+        if (productCategoryFilter) {
+            productCategoryFilter.appendChild(option.cloneNode(true));
+        }
     });
 });
 
@@ -312,32 +328,168 @@ if (addCategoryBtn) {
     });
 }
 
-// Real-time listener for Products
-onSnapshot(query(productsCol, orderBy('createdAt', 'desc')), (snapshot) => {
-    productsTableBody.innerHTML = '';
-    totalProductsCount.textContent = snapshot.size;
-    allProducts = {}; // Reset local cache
+// Pagination State
+const PAGE_SIZE = 20;
+let currentPage = 1;
+let firstDoc = null;
+let lastDoc = null;
+let hasNextPage = false;
+let hasPrevPage = false;
 
-    snapshot.forEach((docSnap) => {
-        const prod = docSnap.data();
-        const id = docSnap.id;
-        allProducts[id] = prod; // Store product in local cache
+// Search & Filter State
+let searchTerm = "";
+let categoryFilter = "";
 
-        const tr = document.createElement('tr');
+// Function to update total products count in dashboard stats
+async function updateTotalProductsCount() {
+    try {
+        const collSnapshot = await getCountFromServer(productsCol);
+        if (totalProductsCount) {
+            totalProductsCount.textContent = collSnapshot.data().count;
+        }
+    } catch (e) {
+        console.error("Error fetching total products count:", e);
+    }
+}
 
-        tr.innerHTML = `
-            <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
-            <td><strong>${prod.name}</strong></td>
-            <td>${prod.category}</td>
-            <td>${prod.price} ج.م</td>
-            <td>
-                <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
-                <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        `;
-        productsTableBody.appendChild(tr);
+// Global products load function
+async function loadProducts(direction = 'init') {
+    try {
+        productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>';
+        
+        let q;
+        let constraints = [];
+        
+        // 1. Category Filter
+        if (categoryFilter) {
+            constraints.push(where('category', '==', categoryFilter));
+        }
+        
+        // 2. Search Term Filter (StartAt / EndAt)
+        if (searchTerm) {
+            constraints.push(orderBy('name'));
+            constraints.push(startAt(searchTerm));
+            constraints.push(endAt(searchTerm + '\uf8ff'));
+        } else {
+            constraints.push(orderBy('createdAt', 'desc'));
+        }
+        
+        // 3. Determine pagination cursors
+        if (direction === 'next' && lastDoc) {
+            q = query(productsCol, ...constraints, startAfter(lastDoc), limit(PAGE_SIZE));
+        } else if (direction === 'prev' && firstDoc) {
+            q = query(productsCol, ...constraints, endBefore(firstDoc), limitToLast(PAGE_SIZE));
+        } else {
+            // init or search/filter change
+            currentPage = 1;
+            q = query(productsCol, ...constraints, limit(PAGE_SIZE));
+        }
+        
+        const snapshot = await getDocs(q);
+        
+        productsTableBody.innerHTML = '';
+        allProducts = {};
+        
+        if (snapshot.empty) {
+            productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-gray);">لا توجد منتجات مطابقة للبحث.</td></tr>';
+            document.getElementById('loadedProductsCount').textContent = '0';
+            document.getElementById('prevPageBtn').disabled = true;
+            document.getElementById('nextPageBtn').disabled = true;
+            document.getElementById('currentPageNum').textContent = `صفحة ${currentPage}`;
+            firstDoc = null;
+            lastDoc = null;
+            return;
+        }
+        
+        // Get first and last document of current page
+        firstDoc = snapshot.docs[0];
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        
+        let count = 0;
+        snapshot.forEach((docSnap) => {
+            const prod = docSnap.data();
+            const id = docSnap.id;
+            allProducts[id] = prod;
+            count++;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
+                <td><strong>${prod.name}</strong></td>
+                <td>${prod.category}</td>
+                <td>${prod.price} ج.م</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            productsTableBody.appendChild(tr);
+        });
+        
+        document.getElementById('loadedProductsCount').textContent = count;
+        
+        // Check if there is a next page
+        if (direction === 'prev') {
+            hasNextPage = true;
+        } else {
+            const nextQ = query(productsCol, ...constraints, startAfter(lastDoc), limit(1));
+            const nextSnapshot = await getDocs(nextQ);
+            hasNextPage = !nextSnapshot.empty;
+        }
+        
+        hasPrevPage = currentPage > 1;
+        
+        document.getElementById('prevPageBtn').disabled = !hasPrevPage;
+        document.getElementById('nextPageBtn').disabled = !hasNextPage;
+        document.getElementById('currentPageNum').textContent = `صفحة ${currentPage}`;
+        
+    } catch (error) {
+        console.error("Error loading products: ", error);
+        productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--error-color);">حدث خطأ أثناء تحميل المنتجات.</td></tr>';
+    }
+}
+
+// Search and Filter Listeners
+const searchInput = document.getElementById('productSearchInput');
+const categoryFilterSelect = document.getElementById('productCategoryFilter');
+
+let searchDebounceTimeout;
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimeout);
+        searchTerm = e.target.value.trim();
+        searchDebounceTimeout = setTimeout(() => {
+            loadProducts('init');
+        }, 500);
     });
-});
+}
+
+if (categoryFilterSelect) {
+    categoryFilterSelect.addEventListener('change', (e) => {
+        categoryFilter = e.target.value;
+        loadProducts('init');
+    });
+}
+
+// Pagination buttons listeners
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+
+if (prevPageBtn) {
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadProducts('prev');
+        }
+    });
+}
+
+if (nextPageBtn) {
+    nextPageBtn.addEventListener('click', () => {
+        currentPage++;
+        loadProducts('next');
+    });
+}
 
 // Real-time listener for Orders
 onSnapshot(query(ordersCol, orderBy('createdAt', 'desc')), (snapshot) => {
@@ -533,6 +685,8 @@ if (excelFileInput) {
                 }
 
                 alert(`تم بنجاح! إضافة ${successCount} منتج إلى قسم "${selectedCategory}".`);
+                await loadProducts('init');
+                await updateTotalProductsCount();
             } catch (error) {
                 console.error("Excel processing error: ", error);
                 alert("حدث خطأ أثناء معالجة ملف الإكسيل.");
