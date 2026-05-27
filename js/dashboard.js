@@ -38,8 +38,8 @@ const PAGE_SIZE = 15;
 let currentPage = 1;
 let searchQuery = '';
 let selectedCategory = '';
-let pageStartDocs = { 1: null };
 let isFetchingProducts = false;
+let cachedProductsList = []; // Cache of all products for case-insensitive search and fast local filtering
 
 // DOM Elements
 const productsTableBody = document.querySelector('#productsTable tbody');
@@ -143,6 +143,7 @@ productForm.addEventListener('submit', async (e) => {
         productForm.reset();
 
         // Refresh products list and count
+        cachedProductsList = [];
         loadProductsPage(currentPage);
         updateTotalProductsCount();
 
@@ -205,6 +206,7 @@ window.deleteProduct = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
         try {
             await deleteDoc(doc(db, 'products', id));
+            cachedProductsList = [];
             loadProductsPage(currentPage);
             updateTotalProductsCount();
         } catch (error) {
@@ -344,102 +346,57 @@ if (addCategoryBtn) {
 
 async function loadProductsPage(page = 1) {
     if (isFetchingProducts) return;
-    isFetchingProducts = true;
 
     try {
-        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</td></tr>`;
-
         // Update current page
         currentPage = page;
         const currentPageNum = document.getElementById('currentPageNum');
         if (currentPageNum) currentPageNum.textContent = currentPage;
 
-        if (searchQuery.trim() !== '') {
-            // Firestore prefix search (starts with searchQuery)
-            // It relies on sorting by name, but to avoid complex index requirements,
-            // we will query up to 100 matching products and filter/paginate client-side
-            const normalizedSearch = searchQuery.trim();
+        // If cache is empty, fetch all products from Firestore
+        if (cachedProductsList.length === 0) {
+            isFetchingProducts = true;
+            productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
             
-            let nameQuery = query(
-                productsCol, 
-                orderBy('name'), 
-                startAt(normalizedSearch), 
-                endAt(normalizedSearch + '\uf8ff')
-            );
+            const q = query(productsCol, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
             
-            const searchSnapshot = await getDocs(nameQuery);
-            let searchedProducts = [];
-            searchSnapshot.forEach(docSnap => {
-                const prod = docSnap.data();
-                searchedProducts.push({ id: docSnap.id, ...prod });
-            });
-
-            // Filter by category if selected
-            if (selectedCategory) {
-                searchedProducts = searchedProducts.filter(p => p.category === selectedCategory);
-            }
-
-            // Total results count for searching
-            const totalCount = searchedProducts.length;
-
-            // Paginate the local array
-            const startIndex = (currentPage - 1) * PAGE_SIZE;
-            const paginatedItems = searchedProducts.slice(startIndex, startIndex + PAGE_SIZE);
-
-            // Render products
-            renderProductsList(paginatedItems);
-
-            // Update UI pagination controls
-            updatePaginationUI(totalCount, startIndex, paginatedItems.length);
-        } else {
-            // Standard query with pagination
-            // 1. Get total count
-            let countQuery;
-            if (selectedCategory) {
-                countQuery = query(productsCol, where('category', '==', selectedCategory));
-            } else {
-                countQuery = query(productsCol);
-            }
-            const countSnapshot = await getCountFromServer(countQuery);
-            const totalCount = countSnapshot.data().count;
-
-            // 2. Build paginated query
-            let paginatedQuery;
-            if (selectedCategory) {
-                paginatedQuery = query(productsCol, where('category', '==', selectedCategory), orderBy('createdAt', 'desc'));
-            } else {
-                paginatedQuery = query(productsCol, orderBy('createdAt', 'desc'));
-            }
-
-            // Apply startAfter for pages > 1
-            if (currentPage > 1 && pageStartDocs[currentPage]) {
-                paginatedQuery = query(paginatedQuery, startAfter(pageStartDocs[currentPage]));
-            }
-
-            paginatedQuery = query(paginatedQuery, limit(PAGE_SIZE));
-
-            const querySnapshot = await getDocs(paginatedQuery);
-            
-            let pageProducts = [];
+            cachedProductsList = [];
             querySnapshot.forEach(docSnap => {
-                const prod = docSnap.data();
-                pageProducts.push({ id: docSnap.id, ...prod });
+                cachedProductsList.push({ id: docSnap.id, ...docSnap.data() });
             });
-
-            // Store the last document of this page to use as startAfter for next page
-            if (querySnapshot.docs.length > 0) {
-                pageStartDocs[currentPage + 1] = querySnapshot.docs[querySnapshot.docs.length - 1];
-            }
-
-            renderProductsList(pageProducts);
-
-            const startIndex = (currentPage - 1) * PAGE_SIZE;
-            updatePaginationUI(totalCount, startIndex, pageProducts.length);
+            isFetchingProducts = false;
         }
+
+        // Apply filters locally (Category and Case-insensitive Search)
+        let filteredProducts = cachedProductsList;
+
+        if (selectedCategory) {
+            filteredProducts = filteredProducts.filter(p => p.category === selectedCategory);
+        }
+
+        if (searchQuery.trim() !== '') {
+            const searchLower = searchQuery.toLowerCase().trim();
+            filteredProducts = filteredProducts.filter(p => 
+                p.name && p.name.toLowerCase().includes(searchLower)
+            );
+        }
+
+        const totalCount = filteredProducts.length;
+
+        // Paginate local array
+        const startIndex = (currentPage - 1) * PAGE_SIZE;
+        const paginatedItems = filteredProducts.slice(startIndex, startIndex + PAGE_SIZE);
+
+        // Render products
+        renderProductsList(paginatedItems);
+
+        // Update UI pagination controls
+        updatePaginationUI(totalCount, startIndex, paginatedItems.length);
+
     } catch (error) {
         console.error("Error loading products:", error);
         productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error-color);"><i class="fa-solid fa-circle-exclamation"></i> حدث خطأ أثناء تحميل المنتجات.</td></tr>`;
-    } finally {
         isFetchingProducts = false;
     }
 }
@@ -503,6 +460,10 @@ function updatePaginationUI(totalCount, startIndex, countOnPage) {
 
 async function updateTotalProductsCount() {
     try {
+        if (cachedProductsList.length > 0) {
+            if (totalProductsCount) totalProductsCount.textContent = cachedProductsList.length;
+            return;
+        }
         const snapshot = await getCountFromServer(productsCol);
         const count = snapshot.data().count;
         if (totalProductsCount) totalProductsCount.textContent = count;
@@ -524,8 +485,6 @@ if (adminProductSearch) {
         clearTimeout(searchDebounceTimeout);
         searchDebounceTimeout = setTimeout(() => {
             searchQuery = e.target.value;
-            // Reset pagination state
-            pageStartDocs = { 1: null };
             loadProductsPage(1);
         }, 300); // 300ms debounce
     });
@@ -534,8 +493,6 @@ if (adminProductSearch) {
 if (adminProductCategoryFilter) {
     adminProductCategoryFilter.addEventListener('change', (e) => {
         selectedCategory = e.target.value;
-        // Reset pagination state
-        pageStartDocs = { 1: null };
         loadProductsPage(1);
     });
 }
@@ -752,7 +709,7 @@ if (excelFileInput) {
                 }
 
                 alert(`تم بنجاح! إضافة ${successCount} منتج إلى قسم "${selectedCategory}".`);
-                pageStartDocs = { 1: null };
+                cachedProductsList = [];
                 loadProductsPage(1);
                 updateTotalProductsCount();
             } catch (error) {
