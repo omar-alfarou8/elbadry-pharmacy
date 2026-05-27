@@ -1,7 +1,7 @@
-import { auth, db } from './firebase-config.js';
+import { auth, db, storage } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { supabase } from './supabase-config.js';
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 // Check Auth state immediately
 onAuthStateChanged(auth, (user) => {
@@ -109,12 +109,9 @@ productForm.addEventListener('submit', async (e) => {
     try {
         if (selectedProductImageFile) {
             const fileName = Date.now() + '_' + selectedProductImageFile.name;
-            const { data, error } = await supabase.storage.from('pharmacy_images').upload('products/' + fileName, selectedProductImageFile);
-
-            if (error) throw error;
-
-            const { data: publicUrlData } = supabase.storage.from('pharmacy_images').getPublicUrl('products/' + fileName);
-            image = publicUrlData.publicUrl;
+            const storageRef = ref(storage, 'products/' + fileName);
+            const snapshot = await uploadBytes(storageRef, selectedProductImageFile);
+            image = await getDownloadURL(snapshot.ref);
         }
 
         const productData = {

@@ -1,6 +1,6 @@
-import { db } from './firebase-config.js';
+import { db, storage } from './firebase-config.js';
 import { collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { supabase } from './supabase-config.js';
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 const orderForm = document.getElementById('orderForm');
 const submitBtn = document.getElementById('submitBtn');
@@ -134,14 +134,11 @@ orderForm.addEventListener('submit', async (e) => {
     if (selectedImageFile) {
         try {
             const fileName = Date.now() + '_' + selectedImageFile.name;
-            const { data, error } = await supabase.storage.from('pharmacy_images').upload('prescriptions/' + fileName, selectedImageFile);
-            
-            if (error) throw error;
-            
-            const { data: publicUrlData } = supabase.storage.from('pharmacy_images').getPublicUrl('prescriptions/' + fileName);
-            prescriptionUrl = publicUrlData.publicUrl;
+            const storageRef = ref(storage, 'prescriptions/' + fileName);
+            const snapshot = await uploadBytes(storageRef, selectedImageFile);
+            prescriptionUrl = await getDownloadURL(snapshot.ref);
         } catch (error) {
-            console.error("Error uploading image to Supabase: ", error);
+            console.error("Error uploading image to Firebase: ", error);
             alertBox.textContent = 'نعتذر، حدثت مشكلة أثناء رفع الصورة. يرجى التواصل معنا لحل المشكله.';
             alertBox.className = 'alert alert-error';
             alertBox.classList.remove('hidden');
