@@ -30,16 +30,16 @@ const productsCol = collection(db, 'products');
 const ordersCol = collection(db, 'orders');
 const categoriesCol = collection(db, 'categories');
 
-// Local products cache for current page view
+// Local products cache
 let allProducts = {};
 
-// Pagination and Filter State (Server-side)
+// Pagination and Filter State
 const PAGE_SIZE = 15;
 let currentPage = 1;
 let searchQuery = '';
 let selectedCategory = '';
 let isFetchingProducts = false;
-let pageSnapshots = [null]; // holds last visible document of each page for page-based query pagination
+let cachedProductsList = []; // Cache of all products for case-insensitive search and fast local filtering
 
 // DOM Elements
 const productsTableBody = document.querySelector('#productsTable tbody');
@@ -135,16 +135,22 @@ productForm.addEventListener('submit', async (e) => {
 
         if (id) {
             await updateDoc(doc(db, 'products', id), productData);
+            // Update in local memory cache to save Firestore reads
+            const idx = cachedProductsList.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                cachedProductsList[idx] = { ...cachedProductsList[idx], ...productData };
+            }
         } else {
             productData.createdAt = new Date();
-            await addDoc(productsCol, productData);
+            const docRef = await addDoc(productsCol, productData);
+            // Prepend new product to local cache to save Firestore reads
+            cachedProductsList.unshift({ id: docRef.id, ...productData });
             currentPage = 1; // Go back to page 1 to see the new product
         }
-        pageSnapshots = [null]; // Reset snapshots history to force clean server fetch
         document.getElementById('productModal').classList.remove('active');
         productForm.reset();
 
-        // Refresh products list view from server
+        // Refresh products list view locally without re-fetching from database
         loadProductsPage(currentPage);
         updateTotalProductsCount();
 
@@ -207,7 +213,15 @@ window.deleteProduct = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
         try {
             await deleteDoc(doc(db, 'products', id));
-            pageSnapshots = [null]; // Reset snapshots history to force clean server fetch
+            // Remove from local memory cache to save Firestore reads
+            cachedProductsList = cachedProductsList.filter(p => p.id !== id);
+            
+            // Adjust page number if the current page has no products left after deletion
+            const maxPage = Math.max(1, Math.ceil(cachedProductsList.length / PAGE_SIZE));
+            if (currentPage > maxPage) {
+                currentPage = maxPage;
+            }
+            
             loadProductsPage(currentPage);
             updateTotalProductsCount();
         } catch (error) {
@@ -343,114 +357,64 @@ if (addCategoryBtn) {
     });
 }
 
-// --- Pagination and Search Logic for Products (Server-side) ---
+// --- Pagination and Search Logic for Products ---
 
 async function loadProductsPage(page = 1) {
     if (isFetchingProducts) return;
-    isFetchingProducts = true;
 
     try {
         currentPage = page;
         const currentPageNum = document.getElementById('currentPageNum');
         if (currentPageNum) currentPageNum.textContent = currentPage;
 
-        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
+        // If cache is empty, fetch all products from Firestore once
+        if (cachedProductsList.length === 0) {
+            isFetchingProducts = true;
+            productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
+            
+            const q = query(productsCol, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            
+            cachedProductsList = [];
+            querySnapshot.forEach(docSnap => {
+                cachedProductsList.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            isFetchingProducts = false;
+        }
 
-        let q;
-        const productsCol = collection(db, 'products');
+        // Apply filters locally (Category and Case-insensitive Arabic Normalized Search)
+        let filteredProducts = cachedProductsList;
+
+        if (selectedCategory) {
+            filteredProducts = filteredProducts.filter(p => p.category === selectedCategory);
+        }
 
         if (searchQuery.trim() !== '') {
-            // Server-side prefix search
-            const searchStart = searchQuery.trim();
-            const searchEnd = searchStart + '\uf8ff';
-            
-            if (currentPage > 1 && pageSnapshots[currentPage - 1]) {
-                q = query(
-                    productsCol,
-                    orderBy('name'),
-                    startAt(searchStart),
-                    endAt(searchEnd),
-                    startAfter(pageSnapshots[currentPage - 1]),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    orderBy('name'),
-                    startAt(searchStart),
-                    endAt(searchEnd),
-                    limit(PAGE_SIZE)
-                );
-            }
-        } else if (selectedCategory) {
-            // Server-side category filter
-            if (currentPage > 1 && pageSnapshots[currentPage - 1]) {
-                q = query(
-                    productsCol,
-                    where('category', '==', selectedCategory),
-                    orderBy('createdAt', 'desc'),
-                    startAfter(pageSnapshots[currentPage - 1]),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    where('category', '==', selectedCategory),
-                    orderBy('createdAt', 'desc'),
-                    limit(PAGE_SIZE)
-                );
-            }
-        } else {
-            // Default pagination (server-side)
-            if (currentPage > 1 && pageSnapshots[currentPage - 1]) {
-                q = query(
-                    productsCol,
-                    orderBy('createdAt', 'desc'),
-                    startAfter(pageSnapshots[currentPage - 1]),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    orderBy('createdAt', 'desc'),
-                    limit(PAGE_SIZE)
-                );
-            }
+            const searchLower = searchQuery.toLowerCase().trim();
+            const normalizeArabic = (str) => {
+                return str
+                    .replace(/[أإآ]/g, 'ا')
+                    .replace(/ة/g, 'ه')
+                    .replace(/ى/g, 'ي')
+                    .toLowerCase();
+            };
+            const normalizedSearch = normalizeArabic(searchLower);
+            filteredProducts = filteredProducts.filter(p => 
+                p.name && normalizeArabic(p.name).includes(normalizedSearch)
+            );
         }
 
-        const querySnapshot = await getDocs(q);
-        const paginatedItems = [];
-        querySnapshot.forEach(docSnap => {
-            paginatedItems.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        const totalCount = filteredProducts.length;
 
-        // Save last snapshot of current page to paginate the next page correctly
-        if (querySnapshot.docs.length > 0) {
-            pageSnapshots[currentPage] = querySnapshot.docs[querySnapshot.docs.length - 1];
-        }
+        // Paginate local array
+        const startIndex = (currentPage - 1) * PAGE_SIZE;
+        const paginatedItems = filteredProducts.slice(startIndex, startIndex + PAGE_SIZE);
 
         // Render products
         renderProductsList(paginatedItems);
 
-        // Fetch exact total count under active filters to build pagination UI
-        let countQuery;
-        if (searchQuery.trim() !== '') {
-            const searchStart = searchQuery.trim();
-            const searchEnd = searchStart + '\uf8ff';
-            countQuery = query(productsCol, orderBy('name'), startAt(searchStart), endAt(searchEnd));
-        } else if (selectedCategory) {
-            countQuery = query(productsCol, where('category', '==', selectedCategory));
-        } else {
-            countQuery = productsCol;
-        }
-
-        const countSnapshot = await getCountFromServer(countQuery);
-        const totalCount = countSnapshot.data().count;
-
-        const startIndex = (currentPage - 1) * PAGE_SIZE;
+        // Update UI pagination controls
         updatePaginationUI(totalCount, startIndex, paginatedItems.length);
-
-        isFetchingProducts = false;
 
     } catch (error) {
         console.error("Error loading products:", error);
@@ -517,6 +481,10 @@ function updatePaginationUI(totalCount, startIndex, countOnPage) {
 
 async function updateTotalProductsCount() {
     try {
+        if (cachedProductsList.length > 0) {
+            if (totalProductsCount) totalProductsCount.textContent = cachedProductsList.length;
+            return;
+        }
         const snapshot = await getCountFromServer(productsCol);
         const count = snapshot.data().count;
         if (totalProductsCount) totalProductsCount.textContent = count;
@@ -525,29 +493,22 @@ async function updateTotalProductsCount() {
     }
 }
 
-// Search and Filter Event Listeners with Debounce
+// Search and Filter Event Listeners
 const adminProductSearch = document.getElementById('adminProductSearch');
 const adminProductCategoryFilter = document.getElementById('adminProductCategoryFilter');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 
-let searchDebounceTimeout = null;
-
 if (adminProductSearch) {
     adminProductSearch.addEventListener('input', (e) => {
-        clearTimeout(searchDebounceTimeout);
-        searchDebounceTimeout = setTimeout(() => {
-            searchQuery = e.target.value;
-            pageSnapshots = [null]; // Reset snapshot history for new search
-            loadProductsPage(1);
-        }, 400); // 400ms debounce to save Firestore reads
+        searchQuery = e.target.value;
+        loadProductsPage(1);
     });
 }
 
 if (adminProductCategoryFilter) {
     adminProductCategoryFilter.addEventListener('change', (e) => {
         selectedCategory = e.target.value;
-        pageSnapshots = [null]; // Reset snapshot history for new filter
         loadProductsPage(1);
     });
 }
@@ -565,6 +526,10 @@ if (nextPageBtn) {
         loadProductsPage(currentPage + 1);
     });
 }
+
+// Trigger initial load
+loadProductsPage(1);
+updateTotalProductsCount();
 
 // Real-time listener for Orders (limit to 50 for fast loading and low reads)
 onSnapshot(query(ordersCol, orderBy('createdAt', 'desc'), limit(50)), (snapshot) => {

@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { collection, query, orderBy, getDocs, addDoc, onSnapshot, doc, limit, startAfter, where, startAt, endAt } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, query, orderBy, getDocs, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const productsGrid = document.getElementById('productsGrid');
 const filterBtns = document.querySelectorAll('.filter-btn');
@@ -15,172 +15,136 @@ onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
 
 let cart = JSON.parse(localStorage.getItem('elbadry_cart')) || [];
 
-// Server-side Pagination & Filter State
+let allProducts = [];
+let filteredProducts = [];
+let displayedCount = 0;
 const PAGE_SIZE = 12;
-let lastVisibleDoc = null;
-let hasMoreProducts = true;
-let currentFilter = 'all';
-let currentSearch = '';
-let isLoadingProducts = false;
 
-// Load products from server
-async function loadProducts(isLoadMore = false) {
-    if (isLoadingProducts) return;
-    isLoadingProducts = true;
-
+// Load products
+async function loadProducts() {
     try {
-        if (!isLoadMore) {
-            productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل المنتجات...</p></div>`;
-            lastVisibleDoc = null;
-            hasMoreProducts = true;
-            
-            const oldBtn = document.getElementById('loadMoreBtnContainer');
-            if (oldBtn) oldBtn.remove();
-        }
-
-        let q;
-        const productsCol = collection(db, "products");
-
-        if (currentSearch.trim() !== '') {
-            // Prefix search by name (server-side)
-            const searchStart = currentSearch.trim();
-            const searchEnd = searchStart + '\uf8ff';
-            
-            if (isLoadMore && lastVisibleDoc) {
-                q = query(
-                    productsCol,
-                    orderBy("name"),
-                    startAt(searchStart),
-                    endAt(searchEnd),
-                    startAfter(lastVisibleDoc),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    orderBy("name"),
-                    startAt(searchStart),
-                    endAt(searchEnd),
-                    limit(PAGE_SIZE)
-                );
-            }
-        } else if (currentFilter !== 'all') {
-            // Category filter (server-side)
-            if (isLoadMore && lastVisibleDoc) {
-                q = query(
-                    productsCol,
-                    where("category", "==", currentFilter),
-                    orderBy("createdAt", "desc"),
-                    startAfter(lastVisibleDoc),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    where("category", "==", currentFilter),
-                    orderBy("createdAt", "desc"),
-                    limit(PAGE_SIZE)
-                );
-            }
-        } else {
-            // Default list (server-side pagination)
-            if (isLoadMore && lastVisibleDoc) {
-                q = query(
-                    productsCol,
-                    orderBy("createdAt", "desc"),
-                    startAfter(lastVisibleDoc),
-                    limit(PAGE_SIZE)
-                );
-            } else {
-                q = query(
-                    productsCol,
-                    orderBy("createdAt", "desc"),
-                    limit(PAGE_SIZE)
-                );
-            }
-        }
-
-        const querySnapshot = await getDocs(q);
-
-        if (!isLoadMore) {
-            productsGrid.innerHTML = '';
-        }
-
-        const nextProducts = [];
-        querySnapshot.forEach((doc) => {
-            nextProducts.push({ id: doc.id, ...doc.data() });
-        });
-
-        if (nextProducts.length > 0) {
-            lastVisibleDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-        }
-
-        if (nextProducts.length < PAGE_SIZE) {
-            hasMoreProducts = false;
-        }
-
-        if (!isLoadMore && nextProducts.length === 0) {
-            productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
-            isLoadingProducts = false;
+        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل المنتجات...</p></div>`;
+        
+        // Try loading from sessionStorage first (cache for 10 minutes) to save Firestore reads
+        const cachedData = sessionStorage.getItem('elbadry_products_cache');
+        const cachedTime = sessionStorage.getItem('elbadry_products_cache_time');
+        const now = Date.now();
+        
+        if (cachedData && cachedTime && (now - Number(cachedTime) < 10 * 60 * 1000)) { // 10 minutes cache
+            allProducts = JSON.parse(cachedData);
+            applyFilters();
             return;
         }
 
-        nextProducts.forEach(prod => {
-            const div = document.createElement('div');
-            div.className = 'product-card';
-            div.style.animation = 'fadeIn 0.5s ease forwards';
-            div.innerHTML = `
-                <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
-                    <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
-                </a>
-                <div class="product-info">
-                    <div class="product-category">${prod.category}</div>
-                    <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
-                        <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
-                    </a>
-                    <div class="product-price">${prod.price} ج.م</div>
-                    <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
-                    </div>
-                </div>
-            `;
-            productsGrid.appendChild(div);
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        allProducts = [];
+        querySnapshot.forEach((doc) => {
+            allProducts.push({ id: doc.id, ...doc.data() });
         });
 
-        updateGridActionsUI();
+        // Save to sessionStorage
+        sessionStorage.setItem('elbadry_products_cache', JSON.stringify(allProducts));
+        sessionStorage.setItem('elbadry_products_cache_time', String(now));
 
-        // Update pagination button
-        const oldBtn = document.getElementById('loadMoreBtnContainer');
-        if (oldBtn) oldBtn.remove();
-
-        if (hasMoreProducts) {
-            const btnContainer = document.createElement('div');
-            btnContainer.id = 'loadMoreBtnContainer';
-            btnContainer.style = 'grid-column: 1/-1; text-align: center; margin-top: 30px; margin-bottom: 20px;';
-            btnContainer.innerHTML = `<button id="loadMoreBtn" style="background: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-family: inherit; font-weight: bold; transition: opacity 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa-solid fa-angle-down" style="margin-left: 8px;"></i> عرض المزيد</button>`;
-
-            productsGrid.appendChild(btnContainer);
-
-            document.getElementById('loadMoreBtn').addEventListener('click', () => {
-                const btn = document.getElementById('loadMoreBtn');
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> جاري التحميل...`;
-                btn.style.opacity = '0.7';
-                loadProducts(true);
-            });
-        }
+        applyFilters();
 
     } catch (e) {
         console.error("Error loading products: ", e);
-        if (!isLoadMore) {
-            productsGrid.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
-                    <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
-                    <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
-                    <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى إعادة تحميل الصفحة أو المحاولة لاحقاً.</div>
+        productsGrid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+                <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
+                <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
+                <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى إعادة تحميل الصفحة أو المحاولة لاحقاً.</div>
+            </div>
+        `;
+    }
+}
+
+let currentFilter = 'all';
+let currentSearch = '';
+
+function applyFilters() {
+    let filtered = allProducts;
+
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(p => p.category.includes(currentFilter) || currentFilter.includes(p.category));
+    }
+
+    if (currentSearch.trim() !== '') {
+        const searchLower = currentSearch.toLowerCase().trim();
+        // Support flexible Arabic letter normalization and case-insensitive substring matching
+        const normalizeArabic = (str) => {
+            return str
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ة/g, 'ه')
+                .replace(/ى/g, 'ي')
+                .toLowerCase();
+        };
+        const normalizedSearch = normalizeArabic(searchLower);
+        filtered = filtered.filter(p => p.name && normalizeArabic(p.name).includes(normalizedSearch));
+    }
+
+    filteredProducts = filtered;
+    displayedCount = 0;
+    productsGrid.innerHTML = '';
+
+    const oldBtn = document.getElementById('loadMoreBtnContainer');
+    if (oldBtn) oldBtn.remove();
+
+    loadMoreProducts();
+}
+
+function loadMoreProducts() {
+    const nextProducts = filteredProducts.slice(displayedCount, displayedCount + PAGE_SIZE);
+
+    if (displayedCount === 0 && nextProducts.length === 0) {
+        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">لا توجد منتجات مطابقة حالياً.</p>`;
+        return;
+    }
+
+    nextProducts.forEach(prod => {
+        const div = document.createElement('div');
+        div.className = 'product-card';
+        div.style.animation = 'fadeIn 0.5s ease forwards';
+        div.innerHTML = `
+            <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
+                <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+            </a>
+            <div class="product-info">
+                <div class="product-category">${prod.category}</div>
+                <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
+                    <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
+                </a>
+                <div class="product-price">${prod.price} ج.م</div>
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
                 </div>
-            `;
-        }
-    } finally {
-        isLoadingProducts = false;
+            </div>
+        `;
+        productsGrid.appendChild(div);
+    });
+
+    displayedCount += nextProducts.length;
+    updateGridActionsUI();
+
+    const oldBtn = document.getElementById('loadMoreBtnContainer');
+    if (oldBtn) oldBtn.remove();
+
+    if (displayedCount < filteredProducts.length) {
+        const btnContainer = document.createElement('div');
+        btnContainer.id = 'loadMoreBtnContainer';
+        btnContainer.style = 'grid-column: 1/-1; text-align: center; margin-top: 30px; margin-bottom: 20px;';
+        btnContainer.innerHTML = `<button id="loadMoreBtn" style="background: var(--primary-color); color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-family: inherit; font-weight: bold; transition: opacity 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"><i class="fa-solid fa-angle-down" style="margin-left: 8px;"></i> عرض المزيد</button>`;
+
+        productsGrid.appendChild(btnContainer);
+
+        document.getElementById('loadMoreBtn').addEventListener('click', () => {
+            const btn = document.getElementById('loadMoreBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> جاري التحميل...`;
+            btn.style.opacity = '0.7';
+            setTimeout(loadMoreProducts, 300);
+        });
     }
 }
 
@@ -238,22 +202,18 @@ if (storeFiltersContainer) {
                 e.target.classList.add('active');
 
                 currentFilter = e.target.getAttribute('data-filter');
-                loadProducts(false);
+                applyFilters();
             });
         });
     });
 }
 
-// Search Logic with 400ms Debounce to save Firestore reads
+// Search Logic with Instant Filter and Normalization
 const storeSearchInput = document.getElementById('storeSearchInput');
-let storeSearchTimeout = null;
 if (storeSearchInput) {
     storeSearchInput.addEventListener('input', (e) => {
-        clearTimeout(storeSearchTimeout);
-        storeSearchTimeout = setTimeout(() => {
-            currentSearch = e.target.value;
-            loadProducts(false);
-        }, 400);
+        currentSearch = e.target.value;
+        applyFilters();
     });
 }
 
