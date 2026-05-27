@@ -1,6 +1,6 @@
 import { auth, db, storage } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, limit, startAfter, endBefore, limitToLast, where, startAt, endAt, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, limit, startAfter, where, startAt, endAt, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 // Check Auth state immediately
@@ -15,8 +15,6 @@ onAuthStateChanged(auth, (user) => {
         if (container) {
             container.style.setProperty('display', 'flex', 'important');
         }
-        loadProducts('init');
-        updateTotalProductsCount();
     }
 });
 
@@ -34,6 +32,14 @@ const categoriesCol = collection(db, 'categories');
 
 // Local products cache
 let allProducts = {};
+
+// Pagination and Filter State
+const PAGE_SIZE = 15;
+let currentPage = 1;
+let searchQuery = '';
+let selectedCategory = '';
+let pageStartDocs = { 1: null };
+let isFetchingProducts = false;
 
 // DOM Elements
 const productsTableBody = document.querySelector('#productsTable tbody');
@@ -136,6 +142,10 @@ productForm.addEventListener('submit', async (e) => {
         document.getElementById('productModal').classList.remove('active');
         productForm.reset();
 
+        // Refresh products list and count
+        loadProductsPage(currentPage);
+        updateTotalProductsCount();
+
         // Reset image selection
         selectedProductImageFile = null;
         if (productImageFile) productImageFile.value = '';
@@ -147,9 +157,6 @@ productForm.addEventListener('submit', async (e) => {
         document.getElementById('productUsage').value = '';
         document.getElementById('productActiveIngredients').value = '';
         document.getElementById('productWarnings').value = '';
-
-        await loadProducts('init');
-        await updateTotalProductsCount();
 
     } catch (error) {
         console.error("Error saving product: ", error);
@@ -196,9 +203,14 @@ window.editProduct = function (id) {
 
 window.deleteProduct = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')) {
-        await deleteDoc(doc(db, 'products', id));
-        await loadProducts('init');
-        await updateTotalProductsCount();
+        try {
+            await deleteDoc(doc(db, 'products', id));
+            loadProductsPage(currentPage);
+            updateTotalProductsCount();
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert("حدث خطأ أثناء حذف المنتج.");
+        }
     }
 };
 
@@ -280,9 +292,9 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         excelCategorySelect.innerHTML = '<option value="">اختر القسم للإكسيل...</option>';
     }
 
-    const productCategoryFilter = document.getElementById('productCategoryFilter');
-    if (productCategoryFilter) {
-        productCategoryFilter.innerHTML = '<option value="">كل الأقسام</option>';
+    const adminProductCategoryFilter = document.getElementById('adminProductCategoryFilter');
+    if (adminProductCategoryFilter) {
+        adminProductCategoryFilter.innerHTML = '<option value="">كل الأقسام</option>';
     }
 
     snapshot.forEach(docSnap => {
@@ -308,8 +320,8 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
             excelCategorySelect.appendChild(option.cloneNode(true));
         }
 
-        if (productCategoryFilter) {
-            productCategoryFilter.appendChild(option.cloneNode(true));
+        if (adminProductCategoryFilter) {
+            adminProductCategoryFilter.appendChild(option.cloneNode(true));
         }
     });
 });
@@ -328,168 +340,223 @@ if (addCategoryBtn) {
     });
 }
 
-// Pagination State
-const PAGE_SIZE = 20;
-let currentPage = 1;
-let firstDoc = null;
-let lastDoc = null;
-let hasNextPage = false;
-let hasPrevPage = false;
+// --- Pagination and Search Logic for Products ---
 
-// Search & Filter State
-let searchTerm = "";
-let categoryFilter = "";
+async function loadProductsPage(page = 1) {
+    if (isFetchingProducts) return;
+    isFetchingProducts = true;
 
-// Function to update total products count in dashboard stats
+    try {
+        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</td></tr>`;
+
+        // Update current page
+        currentPage = page;
+        const currentPageNum = document.getElementById('currentPageNum');
+        if (currentPageNum) currentPageNum.textContent = currentPage;
+
+        if (searchQuery.trim() !== '') {
+            // Firestore prefix search (starts with searchQuery)
+            // It relies on sorting by name, but to avoid complex index requirements,
+            // we will query up to 100 matching products and filter/paginate client-side
+            const normalizedSearch = searchQuery.trim();
+            
+            let nameQuery = query(
+                productsCol, 
+                orderBy('name'), 
+                startAt(normalizedSearch), 
+                endAt(normalizedSearch + '\uf8ff')
+            );
+            
+            const searchSnapshot = await getDocs(nameQuery);
+            let searchedProducts = [];
+            searchSnapshot.forEach(docSnap => {
+                const prod = docSnap.data();
+                searchedProducts.push({ id: docSnap.id, ...prod });
+            });
+
+            // Filter by category if selected
+            if (selectedCategory) {
+                searchedProducts = searchedProducts.filter(p => p.category === selectedCategory);
+            }
+
+            // Total results count for searching
+            const totalCount = searchedProducts.length;
+
+            // Paginate the local array
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const paginatedItems = searchedProducts.slice(startIndex, startIndex + PAGE_SIZE);
+
+            // Render products
+            renderProductsList(paginatedItems);
+
+            // Update UI pagination controls
+            updatePaginationUI(totalCount, startIndex, paginatedItems.length);
+        } else {
+            // Standard query with pagination
+            // 1. Get total count
+            let countQuery;
+            if (selectedCategory) {
+                countQuery = query(productsCol, where('category', '==', selectedCategory));
+            } else {
+                countQuery = query(productsCol);
+            }
+            const countSnapshot = await getCountFromServer(countQuery);
+            const totalCount = countSnapshot.data().count;
+
+            // 2. Build paginated query
+            let paginatedQuery;
+            if (selectedCategory) {
+                paginatedQuery = query(productsCol, where('category', '==', selectedCategory), orderBy('createdAt', 'desc'));
+            } else {
+                paginatedQuery = query(productsCol, orderBy('createdAt', 'desc'));
+            }
+
+            // Apply startAfter for pages > 1
+            if (currentPage > 1 && pageStartDocs[currentPage]) {
+                paginatedQuery = query(paginatedQuery, startAfter(pageStartDocs[currentPage]));
+            }
+
+            paginatedQuery = query(paginatedQuery, limit(PAGE_SIZE));
+
+            const querySnapshot = await getDocs(paginatedQuery);
+            
+            let pageProducts = [];
+            querySnapshot.forEach(docSnap => {
+                const prod = docSnap.data();
+                pageProducts.push({ id: docSnap.id, ...prod });
+            });
+
+            // Store the last document of this page to use as startAfter for next page
+            if (querySnapshot.docs.length > 0) {
+                pageStartDocs[currentPage + 1] = querySnapshot.docs[querySnapshot.docs.length - 1];
+            }
+
+            renderProductsList(pageProducts);
+
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            updatePaginationUI(totalCount, startIndex, pageProducts.length);
+        }
+    } catch (error) {
+        console.error("Error loading products:", error);
+        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error-color);"><i class="fa-solid fa-circle-exclamation"></i> حدث خطأ أثناء تحميل المنتجات.</td></tr>`;
+    } finally {
+        isFetchingProducts = false;
+    }
+}
+
+function renderProductsList(products) {
+    productsTableBody.innerHTML = '';
+    allProducts = {}; // Reset local cache for editProduct functionality
+    
+    if (products.length === 0) {
+        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">لا توجد منتجات مطابقة.</td></tr>`;
+        return;
+    }
+
+    products.forEach((prod) => {
+        const id = prod.id;
+        allProducts[id] = prod; // Store product in local cache for edit modal
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
+            <td><strong>${prod.name}</strong></td>
+            <td>${prod.category}</td>
+            <td>${prod.price} ج.م</td>
+            <td>
+                <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+        productsTableBody.appendChild(tr);
+    });
+}
+
+function updatePaginationUI(totalCount, startIndex, countOnPage) {
+    const paginationTotal = document.getElementById('paginationTotal');
+    const paginationRange = document.getElementById('paginationRange');
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+
+    if (paginationTotal) paginationTotal.textContent = totalCount;
+    
+    if (paginationRange) {
+        if (totalCount === 0) {
+            paginationRange.textContent = '0 - 0';
+        } else {
+            const start = startIndex + 1;
+            const end = startIndex + countOnPage;
+            paginationRange.textContent = `${start} - ${end}`;
+        }
+    }
+
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage === 1;
+    }
+    
+    if (nextPageBtn) {
+        // Next button is disabled if we are at the last page
+        const hasNext = startIndex + countOnPage < totalCount;
+        nextPageBtn.disabled = !hasNext;
+    }
+}
+
 async function updateTotalProductsCount() {
     try {
-        const collSnapshot = await getCountFromServer(productsCol);
-        if (totalProductsCount) {
-            totalProductsCount.textContent = collSnapshot.data().count;
-        }
+        const snapshot = await getCountFromServer(productsCol);
+        const count = snapshot.data().count;
+        if (totalProductsCount) totalProductsCount.textContent = count;
     } catch (e) {
         console.error("Error fetching total products count:", e);
     }
 }
 
-// Global products load function
-async function loadProducts(direction = 'init') {
-    try {
-        productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>';
-        
-        let q;
-        let constraints = [];
-        
-        // 1. Category Filter
-        if (categoryFilter) {
-            constraints.push(where('category', '==', categoryFilter));
-        }
-        
-        // 2. Search Term Filter (StartAt / EndAt)
-        if (searchTerm) {
-            constraints.push(orderBy('name'));
-            constraints.push(startAt(searchTerm));
-            constraints.push(endAt(searchTerm + '\uf8ff'));
-        } else {
-            constraints.push(orderBy('createdAt', 'desc'));
-        }
-        
-        // 3. Determine pagination cursors
-        if (direction === 'next' && lastDoc) {
-            q = query(productsCol, ...constraints, startAfter(lastDoc), limit(PAGE_SIZE));
-        } else if (direction === 'prev' && firstDoc) {
-            q = query(productsCol, ...constraints, endBefore(firstDoc), limitToLast(PAGE_SIZE));
-        } else {
-            // init or search/filter change
-            currentPage = 1;
-            q = query(productsCol, ...constraints, limit(PAGE_SIZE));
-        }
-        
-        const snapshot = await getDocs(q);
-        
-        productsTableBody.innerHTML = '';
-        allProducts = {};
-        
-        if (snapshot.empty) {
-            productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-gray);">لا توجد منتجات مطابقة للبحث.</td></tr>';
-            document.getElementById('loadedProductsCount').textContent = '0';
-            document.getElementById('prevPageBtn').disabled = true;
-            document.getElementById('nextPageBtn').disabled = true;
-            document.getElementById('currentPageNum').textContent = `صفحة ${currentPage}`;
-            firstDoc = null;
-            lastDoc = null;
-            return;
-        }
-        
-        // Get first and last document of current page
-        firstDoc = snapshot.docs[0];
-        lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        
-        let count = 0;
-        snapshot.forEach((docSnap) => {
-            const prod = docSnap.data();
-            const id = docSnap.id;
-            allProducts[id] = prod;
-            count++;
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
-                <td><strong>${prod.name}</strong></td>
-                <td>${prod.category}</td>
-                <td>${prod.price} ج.م</td>
-                <td>
-                    <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
-                    <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            `;
-            productsTableBody.appendChild(tr);
-        });
-        
-        document.getElementById('loadedProductsCount').textContent = count;
-        
-        // Check if there is a next page
-        if (direction === 'prev') {
-            hasNextPage = true;
-        } else {
-            const nextQ = query(productsCol, ...constraints, startAfter(lastDoc), limit(1));
-            const nextSnapshot = await getDocs(nextQ);
-            hasNextPage = !nextSnapshot.empty;
-        }
-        
-        hasPrevPage = currentPage > 1;
-        
-        document.getElementById('prevPageBtn').disabled = !hasPrevPage;
-        document.getElementById('nextPageBtn').disabled = !hasNextPage;
-        document.getElementById('currentPageNum').textContent = `صفحة ${currentPage}`;
-        
-    } catch (error) {
-        console.error("Error loading products: ", error);
-        productsTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--error-color);">حدث خطأ أثناء تحميل المنتجات.</td></tr>';
-    }
-}
-
-// Search and Filter Listeners
-const searchInput = document.getElementById('productSearchInput');
-const categoryFilterSelect = document.getElementById('productCategoryFilter');
-
-let searchDebounceTimeout;
-if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchDebounceTimeout);
-        searchTerm = e.target.value.trim();
-        searchDebounceTimeout = setTimeout(() => {
-            loadProducts('init');
-        }, 500);
-    });
-}
-
-if (categoryFilterSelect) {
-    categoryFilterSelect.addEventListener('change', (e) => {
-        categoryFilter = e.target.value;
-        loadProducts('init');
-    });
-}
-
-// Pagination buttons listeners
+// Search and Filter Event Listeners
+const adminProductSearch = document.getElementById('adminProductSearch');
+const adminProductCategoryFilter = document.getElementById('adminProductCategoryFilter');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
+
+let searchDebounceTimeout = null;
+
+if (adminProductSearch) {
+    adminProductSearch.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimeout);
+        searchDebounceTimeout = setTimeout(() => {
+            searchQuery = e.target.value;
+            // Reset pagination state
+            pageStartDocs = { 1: null };
+            loadProductsPage(1);
+        }, 300); // 300ms debounce
+    });
+}
+
+if (adminProductCategoryFilter) {
+    adminProductCategoryFilter.addEventListener('change', (e) => {
+        selectedCategory = e.target.value;
+        // Reset pagination state
+        pageStartDocs = { 1: null };
+        loadProductsPage(1);
+    });
+}
 
 if (prevPageBtn) {
     prevPageBtn.addEventListener('click', () => {
         if (currentPage > 1) {
-            currentPage--;
-            loadProducts('prev');
+            loadProductsPage(currentPage - 1);
         }
     });
 }
 
 if (nextPageBtn) {
     nextPageBtn.addEventListener('click', () => {
-        currentPage++;
-        loadProducts('next');
+        loadProductsPage(currentPage + 1);
     });
 }
+
+// Trigger initial load
+loadProductsPage(1);
+updateTotalProductsCount();
 
 // Real-time listener for Orders
 onSnapshot(query(ordersCol, orderBy('createdAt', 'desc')), (snapshot) => {
@@ -685,8 +752,9 @@ if (excelFileInput) {
                 }
 
                 alert(`تم بنجاح! إضافة ${successCount} منتج إلى قسم "${selectedCategory}".`);
-                await loadProducts('init');
-                await updateTotalProductsCount();
+                pageStartDocs = { 1: null };
+                loadProductsPage(1);
+                updateTotalProductsCount();
             } catch (error) {
                 console.error("Excel processing error: ", error);
                 alert("حدث خطأ أثناء معالجة ملف الإكسيل.");
