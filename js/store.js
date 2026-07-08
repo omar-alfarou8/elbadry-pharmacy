@@ -191,9 +191,10 @@ if (categoriesGrid) {
     onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
         categoriesGrid.innerHTML = '';
 
-        // Add the "All" (الكل) category card first
-        const allCard = document.createElement('div');
+        // Add the "All" (الكل) category card first as a real link
+        const allCard = document.createElement('a');
         allCard.className = `category-card ${currentFilter === 'all' ? 'active' : ''}`;
+        allCard.href = 'store.html';
         allCard.setAttribute('data-filter', 'all');
         allCard.innerHTML = `
             <div class="category-icon-wrapper">
@@ -205,9 +206,17 @@ if (categoriesGrid) {
 
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
-            const card = document.createElement('div');
+            const card = document.createElement('a');
             card.className = `category-card ${currentFilter === cat.name ? 'active' : ''}`;
-            card.setAttribute('data-filter', cat.name);
+            
+            // Set redirect URL or filter URL
+            if (cat.link && cat.link.trim() !== '') {
+                card.href = cat.link.trim();
+                card.setAttribute('data-custom-link', 'true');
+            } else {
+                card.href = `store.html?category=${encodeURIComponent(cat.name)}`;
+                card.setAttribute('data-filter', cat.name);
+            }
 
             let visualHtml = '';
             if (cat.type === 'icon') {
@@ -231,10 +240,18 @@ if (categoriesGrid) {
         document.querySelectorAll('.category-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 const targetCard = e.currentTarget;
+                
+                // If this is a custom redirect link, let it navigate natively!
+                if (targetCard.getAttribute('data-custom-link') === 'true') {
+                    return; // Do not call preventDefault
+                }
+                
+                e.preventDefault(); // Stop standard redirect for filter categories
+                
                 document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
                 targetCard.classList.add('active');
 
-                currentFilter = targetCard.getAttribute('data-filter');
+                currentFilter = targetCard.getAttribute('data-filter') || 'all';
                 applyFilters();
 
                 // Update URL parameter dynamically without page reload

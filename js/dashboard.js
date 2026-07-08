@@ -372,12 +372,18 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         }
 
         // Modal List
+        let linkIndicatorHtml = '';
+        if (cat.link) {
+            linkIndicatorHtml = `<span style="font-size: 11px; color: var(--text-gray); margin-right: 8px;">(رابط: ${cat.link})</span>`;
+        }
+
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
         li.innerHTML = `
             <div style="display: flex; align-items: center;">
                 ${visualHtml}
                 <span style="font-weight: bold;">${cat.name}</span>
+                ${linkIndicatorHtml}
             </div>
             <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
         `;
@@ -407,6 +413,7 @@ if (addCategoryBtn) {
             addCategoryBtn.disabled = true;
             
             const type = document.getElementById('newCategoryType').value;
+            const linkVal = document.getElementById('newCategoryLink') ? document.getElementById('newCategoryLink').value.trim() : '';
             let icon = '';
             let image = '';
             
@@ -433,12 +440,16 @@ if (addCategoryBtn) {
                     type: type,
                     icon: icon,
                     image: image,
+                    link: linkVal,
                     createdAt: new Date() 
                 });
                 
                 // Reset fields
                 newCategoryName.value = '';
                 document.getElementById('categoryImage').value = '';
+                if (document.getElementById('newCategoryLink')) {
+                    document.getElementById('newCategoryLink').value = '';
+                }
                 const fileInput = document.getElementById('categoryImageFile');
                 if (fileInput) fileInput.value = '';
             } catch (err) {
