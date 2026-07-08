@@ -11,32 +11,301 @@
     margin-bottom: 10px;
 }
 
-.store-filters {
+/* Ads Slider */
+.store-slider-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    background-color: #f1f5f9;
+}
+
+@media (max-width: 768px) {
+    .store-slider-container {
+        height: 250px;
+    }
+}
+
+.store-slider-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+    z-index: 1;
+}
+
+.slide-item.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+
+.slide-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Glassmorphic overlay for slide text */
+.slide-overlay-content {
+    position: absolute;
+    bottom: 30px;
+    right: 40px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    z-index: 3;
+    animation: slideUp 0.8s ease forwards;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .slide-overlay-content {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+        padding: 12px 20px;
+        max-width: 100%;
+    }
+}
+
+.slide-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+    .slide-title {
+        font-size: 18px;
+        margin-bottom: 4px;
+    }
+}
+
+.slide-desc {
+    font-size: 15px;
+    color: var(--text-dark);
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .slide-desc {
+        font-size: 13px;
+    }
+}
+
+/* Slide Navigation Controls */
+.slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(5px);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 15px;
-    margin: 40px 0;
-    flex-wrap: wrap;
-}
-
-.filter-btn {
-    padding: 10px 25px;
-    border-radius: 50px;
-    background: var(--white);
-    border: 2px solid var(--border-color);
-    color: var(--text-gray);
-    font-weight: 700;
-    font-size: 16px;
+    font-size: 18px;
+    color: var(--primary-dark);
     cursor: pointer;
+    z-index: 10;
     transition: all 0.3s;
-    font-family: inherit;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.filter-btn:hover,
-.filter-btn.active {
+.slider-arrow:hover {
     background: var(--primary-color);
     color: var(--white);
+}
+
+.slider-arrow.prev {
+    right: 20px;
+}
+
+.slider-arrow.next {
+    left: 20px;
+}
+
+@media (max-width: 768px) {
+    .slider-arrow {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+    .slider-arrow.prev { right: 10px; }
+    .slider-arrow.next { left: 10px; }
+}
+
+.slider-dots {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+@media (max-width: 768px) {
+    .slider-dots {
+        bottom: 10px;
+    }
+}
+
+.slider-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.slider-dot.active {
+    background: var(--primary-color);
+    width: 25px;
+    border-radius: 10px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Premium Categories Section */
+.store-categories-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.categories-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--secondary-color);
+    margin-bottom: 25px;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 8px;
+}
+
+.categories-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.categories-grid {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 10px 0;
+}
+
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    width: 120px;
+}
+
+.category-icon-wrapper {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background-color: #f3f4f6; /* Beautiful gray background */
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.category-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.category-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--secondary-color);
+    text-align: center;
+    transition: color 0.3s;
+}
+
+/* Hover effects */
+.category-card:hover .category-icon-wrapper {
+    transform: translateY(-8px);
+    background-color: var(--white);
     border-color: var(--primary-color);
+    box-shadow: 0 10px 20px rgba(11, 128, 122, 0.15);
+}
+
+.category-card:hover .category-img {
+    transform: scale(1.1);
+}
+
+.category-card:hover .category-name {
+    color: var(--primary-color);
+}
+
+/* Active Category state */
+.category-card.active .category-icon-wrapper {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 25px rgba(11, 128, 122, 0.3);
+    transform: translateY(-8px) scale(1.05);
+}
+
+.category-card.active .category-name {
+    color: var(--primary-color);
+    font-weight: 800;
 }
 
 .products-grid {

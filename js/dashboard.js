@@ -63,6 +63,45 @@ if (openCategoriesModal) {
     closeCategoriesModal.addEventListener('click', () => categoriesModal.classList.remove('active'));
 }
 
+// Icon grid option selection
+document.addEventListener('DOMContentLoaded', () => {
+    const iconOptions = document.querySelectorAll('.icon-option');
+    const selectedIconClassInput = document.getElementById('selectedIconClass');
+    if (iconOptions.length > 0 && selectedIconClassInput) {
+        iconOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                iconOptions.forEach(o => {
+                    o.classList.remove('active');
+                    o.style.borderColor = 'var(--border-color)';
+                    o.style.background = 'none';
+                    o.style.color = 'var(--text-gray)';
+                });
+                opt.classList.add('active');
+                opt.style.borderColor = 'var(--primary-color)';
+                opt.style.background = 'rgba(11,128,122,0.05)';
+                opt.style.color = 'var(--primary-color)';
+                selectedIconClassInput.value = opt.getAttribute('data-icon');
+            });
+        });
+    }
+
+    // Category type toggle
+    const newCategoryType = document.getElementById('newCategoryType');
+    const newCategoryIconGroup = document.getElementById('newCategoryIconGroup');
+    const newCategoryImageGroup = document.getElementById('newCategoryImageGroup');
+    if (newCategoryType) {
+        newCategoryType.addEventListener('change', (e) => {
+            if (e.target.value === 'icon') {
+                newCategoryIconGroup.style.display = 'block';
+                newCategoryImageGroup.style.display = 'none';
+            } else {
+                newCategoryIconGroup.style.display = 'none';
+                newCategoryImageGroup.style.display = 'block';
+            }
+        });
+    }
+});
+
 // Form Submit (Add/Edit Product)
 const productForm = document.getElementById('productForm');
 const saveBtn = document.getElementById('saveProductBtn');
@@ -294,9 +333,13 @@ window.deleteCategory = async function (id) {
 // Real-time listener for Categories
 onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) => {
     if (snapshot.empty) {
-        const defaults = ['أدوية', 'مستحضرات تجميل', 'إكسسوارات طبية'];
+        const defaults = [
+            { name: 'أدوية', type: 'icon', icon: 'fa-solid fa-pills', image: '' },
+            { name: 'مستحضرات تجميل', type: 'icon', icon: 'fa-solid fa-wand-magic-sparkles', image: '' },
+            { name: 'إكسسوارات طبية', type: 'icon', icon: 'fa-solid fa-heart-pulse', image: '' }
+        ];
         for (let cat of defaults) {
-            await addDoc(categoriesCol, { name: cat, createdAt: new Date() });
+            await addDoc(categoriesCol, { ...cat, createdAt: new Date() });
         }
         return;
     }
@@ -318,11 +361,24 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         const cat = docSnap.data();
         const id = docSnap.id;
 
+        // Visual indicator for category icon/image
+        let visualHtml = '';
+        if (cat.type === 'icon') {
+            visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--primary-color);"><i class="${cat.icon || 'fa-solid fa-tags'}"></i></span>`;
+        } else if (cat.type === 'image') {
+            visualHtml = `<img src="${cat.image || 'https://via.placeholder.com/150'}" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-left: 10px; border: 1px solid var(--border-color);">`;
+        } else {
+            visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--text-gray);"><i class="fa-solid fa-tags"></i></span>`;
+        }
+
         // Modal List
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
         li.innerHTML = `
-            <span style="font-weight: bold;">${cat.name}</span>
+            <div style="display: flex; align-items: center;">
+                ${visualHtml}
+                <span style="font-weight: bold;">${cat.name}</span>
+            </div>
             <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
         `;
         categoriesList.appendChild(li);
@@ -347,12 +403,51 @@ if (addCategoryBtn) {
     addCategoryBtn.addEventListener('click', async () => {
         const val = newCategoryName.value.trim();
         if (val) {
-            addCategoryBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            addCategoryBtn.innerHTML = 'جاري الإضافة... <i class="fa-solid fa-spinner fa-spin"></i>';
             addCategoryBtn.disabled = true;
-            await addDoc(categoriesCol, { name: val, createdAt: new Date() });
-            newCategoryName.value = '';
-            addCategoryBtn.textContent = 'إضافة';
-            addCategoryBtn.disabled = false;
+            
+            const type = document.getElementById('newCategoryType').value;
+            let icon = '';
+            let image = '';
+            
+            try {
+                if (type === 'icon') {
+                    icon = document.getElementById('selectedIconClass').value || 'fa-solid fa-pills';
+                } else {
+                    const imgFile = document.getElementById('categoryImageFile').files[0];
+                    const imgUrl = document.getElementById('categoryImage').value.trim();
+                    if (imgFile) {
+                        const fileName = Date.now() + '_' + imgFile.name;
+                        const storageRef = ref(storage, 'categories/' + fileName);
+                        const snapshot = await uploadBytes(storageRef, imgFile);
+                        image = await getDownloadURL(snapshot.ref);
+                    } else if (imgUrl) {
+                        image = imgUrl;
+                    } else {
+                        image = 'https://via.placeholder.com/150';
+                    }
+                }
+                
+                await addDoc(categoriesCol, { 
+                    name: val, 
+                    type: type,
+                    icon: icon,
+                    image: image,
+                    createdAt: new Date() 
+                });
+                
+                // Reset fields
+                newCategoryName.value = '';
+                document.getElementById('categoryImage').value = '';
+                const fileInput = document.getElementById('categoryImageFile');
+                if (fileInput) fileInput.value = '';
+            } catch (err) {
+                console.error("Error adding category:", err);
+                alert("حدث خطأ أثناء إضافة القسم.");
+            } finally {
+                addCategoryBtn.textContent = 'إضافة القسم الجديد';
+                addCategoryBtn.disabled = false;
+            }
         }
     });
 }
@@ -739,3 +834,122 @@ if (excelFileInput) {
         reader.readAsArrayBuffer(file);
     });
 }
+
+// ------------- Slide Slider Management -------------
+const slidesCol = collection(db, 'slides');
+const slideForm = document.getElementById('slideForm');
+const saveSlideBtn = document.getElementById('saveSlideBtn');
+const slideImageFile = document.getElementById('slideImageFile');
+const slideImagePreviewContainer = document.getElementById('slideImagePreviewContainer');
+const slideImagePreview = document.getElementById('slideImagePreview');
+const slideImageUrlInput = document.getElementById('slideImage');
+const slidesTableBody = document.querySelector('#slidesTable tbody');
+let selectedSlideImageFile = null;
+
+if (slideImageFile) {
+    slideImageFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            selectedSlideImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                slideImagePreview.src = e.target.result;
+                slideImagePreviewContainer.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+if (slideImageUrlInput) {
+    slideImageUrlInput.addEventListener('input', (e) => {
+        if (!selectedSlideImageFile && e.target.value) {
+            slideImagePreview.src = e.target.value;
+            slideImagePreviewContainer.style.display = 'block';
+        }
+    });
+}
+
+if (slideForm) {
+    slideForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        saveSlideBtn.innerHTML = 'جاري الحفظ... <span class="spinner"></span>';
+        saveSlideBtn.disabled = true;
+
+        const title = document.getElementById('slideTitle').value.trim();
+        const description = document.getElementById('slideDescription').value.trim();
+        const link = document.getElementById('slideLink').value.trim();
+        let image = slideImageUrlInput.value.trim() || 'https://via.placeholder.com/800x400';
+
+        try {
+            if (selectedSlideImageFile) {
+                const fileName = Date.now() + '_' + selectedSlideImageFile.name;
+                const storageRef = ref(storage, 'slides/' + fileName);
+                const snapshot = await uploadBytes(storageRef, selectedSlideImageFile);
+                image = await getDownloadURL(snapshot.ref);
+            }
+
+            const slideData = {
+                title,
+                description,
+                link,
+                image,
+                createdAt: new Date()
+            };
+
+            await addDoc(slidesCol, slideData);
+
+            // Reset form
+            slideForm.reset();
+            selectedSlideImageFile = null;
+            if (slideImageFile) slideImageFile.value = '';
+            slideImagePreviewContainer.style.display = 'none';
+
+        } catch (error) {
+            console.error("Error saving slide: ", error);
+            alert('حدث خطأ أثناء إضافة الشريحة.');
+        } finally {
+            saveSlideBtn.innerHTML = 'إضافة الشريحة الإعلانية';
+            saveSlideBtn.disabled = false;
+        }
+    });
+}
+
+// Real-time listener for slides
+if (slidesTableBody) {
+    onSnapshot(query(slidesCol, orderBy('createdAt', 'desc')), (snapshot) => {
+        slidesTableBody.innerHTML = '';
+        if (snapshot.empty) {
+            slidesTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-gray);">لا توجد إعلانات نشطة حالياً.</td></tr>`;
+            return;
+        }
+
+        snapshot.forEach(docSnap => {
+            const slide = docSnap.data();
+            const id = docSnap.id;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><img src="${slide.image}" width="100" height="50" style="border-radius:6px; object-fit:cover; border: 1px solid var(--border-color);"></td>
+                <td><strong>${slide.title || 'بدون عنوان'}</strong></td>
+                <td>${slide.description || 'بدون وصف'}</td>
+                <td><a href="${slide.link}" target="_blank" style="color: var(--primary-color); word-break: break-all;">${slide.link}</a></td>
+                <td>
+                    <button class="action-btn delete-btn" onclick="deleteSlide('${id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            slidesTableBody.appendChild(tr);
+        });
+    });
+}
+
+window.deleteSlide = async function(id) {
+    if (confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟')) {
+        try {
+            await deleteDoc(doc(db, 'slides', id));
+        } catch (error) {
+            console.error("Error deleting slide:", error);
+            alert("حدث خطأ أثناء حذف الإعلان.");
+        }
+    }
+};

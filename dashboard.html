@@ -47,6 +47,7 @@
                 <li><a href="#" data-target="products"><i class="fa-solid fa-pills"></i> المنتجات</a></li>
                 <li><a href="#" data-target="orders"><i class="fa-solid fa-cart-arrow-down"></i> الطلبات</a></li>
                 <li><a href="#" data-target="delivery"><i class="fa-solid fa-truck-fast"></i> رسوم التوصيل</a></li>
+                <li><a href="#" data-target="slider"><i class="fa-solid fa-images"></i> السلايدر الإعلاني</a></li>
                 <li style="margin-top: auto;"><a href="#" id="logoutBtn" style="color: var(--error-color)"><i
                             class="fa-solid fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
@@ -235,6 +236,72 @@
                 </div>
             </section>
 
+            <!-- Slider Section -->
+            <section id="slider" class="dashboard-section">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>إدارة السلايدر الإعلاني</h3>
+                    </div>
+                    
+                    <form id="slideForm" style="margin-bottom: 30px; background: rgba(0,0,0,0.01); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <input type="hidden" id="slideId">
+                        <div class="input-row">
+                            <div class="input-group" style="flex: 1;">
+                                <label>عنوان الإعلان</label>
+                                <input type="text" id="slideTitle" placeholder="العنوان الرئيسي المكتوب على الصورة">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>وصف الإعلان</label>
+                                <input type="text" id="slideDescription" placeholder="الوصف الفرعي للإعلان">
+                            </div>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group" style="flex: 1;">
+                                <label>الرابط عند الضغط <span class="required">*</span></label>
+                                <input type="text" id="slideLink" placeholder="مثال: store.html أو رابط منتج معين" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>صورة الإعلان</label>
+                            <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--border-color);">
+                                <div>
+                                    <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الأول) رفع صورة من جهازك:</label>
+                                    <input type="file" id="slideImageFile" accept="image/*" style="width: 100%; padding: 8px; border-radius: 8px; font-family: inherit; background: white; border: 1px solid var(--border-color); cursor: pointer;">
+                                </div>
+                                <div style="text-align: center; color: var(--text-gray); font-size: 13px; font-weight: bold;">أو</div>
+                                <div>
+                                    <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الثاني) رابط لصورة على الإنترنت (URL):</label>
+                                    <input type="url" id="slideImage" placeholder="https://example.com/slide.jpg" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
+                                </div>
+                            </div>
+                            <div id="slideImagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
+                                <img id="slideImagePreview" src="" style="max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary" id="saveSlideBtn" style="width: 100%; margin-top: 10px;">إضافة الشريحة الإعلانية</button>
+                    </form>
+
+                    <div style="overflow-x: auto;">
+                        <table id="slidesTable">
+                            <thead>
+                                <tr>
+                                    <th>الصورة</th>
+                                    <th>العنوان</th>
+                                    <th>الوصف</th>
+                                    <th>الرابط</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">جاري تحميل الإعلانات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -343,17 +410,56 @@
 
     <!-- Categories Modal -->
     <div class="modal" id="categoriesModal">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h3>إدارة الأقسام</h3>
                 <button class="close-modal" id="closeCategoriesModal"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
-                <input type="text" id="newCategoryName" placeholder="اسم القسم (مثال: عناية بالبشرة)"
-                    style="flex: 1; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
-                <button class="btn-primary" id="addCategoryBtn" style="padding: 0 20px;">إضافة</button>
+            
+            <div style="margin-bottom: 25px; border-bottom: 1px dashed var(--border-color); padding-bottom: 20px;">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم القسم الجديد <span class="required">*</span></label>
+                    <input type="text" id="newCategoryName" placeholder="مثال: عناية بالبشرة" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">نوع الرمز للقسم:</label>
+                    <select id="newCategoryType" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                        <option value="icon">أيقونة جاهزة</option>
+                        <option value="image">صورة مخصصة</option>
+                    </select>
+                </div>
+
+                <div id="newCategoryIconGroup" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر أيقونة القسم:</label>
+                    <div id="iconGrid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center;">
+                        <div class="icon-option active" data-icon="fa-solid fa-pills" style="padding: 10px; border: 2px solid var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--primary-color); background: rgba(11,128,122,0.05);"><i class="fa-solid fa-pills"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-wand-magic-sparkles" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-hand-holding-droplet" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-hand-holding-droplet"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-baby" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-baby"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-heart-pulse" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-heart-pulse"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-soap" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-soap"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-scissors" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-scissors"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-prescription-bottle-medical" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-kit-medical" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-kit-medical"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-spa" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-spa"></i></div>
+                    </div>
+                    <input type="hidden" id="selectedIconClass" value="fa-solid fa-pills">
+                </div>
+
+                <div id="newCategoryImageGroup" style="margin-bottom: 15px; display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">صورة القسم مخصصة:</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                        <input type="file" id="categoryImageFile" accept="image/*" style="width: 100%; padding: 5px; background: white; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        <div style="text-align: center; font-size: 11px; font-weight: bold; color: var(--text-gray);">أو رابط URL:</div>
+                        <input type="url" id="categoryImage" placeholder="https://example.com/cat.jpg" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
+                    </div>
+                </div>
+
+                <button class="btn-primary" id="addCategoryBtn" style="width: 100%; padding: 12px;">إضافة القسم الجديد</button>
             </div>
-            <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0;">
+
+            <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto;">
                 <!-- Filled dynamically -->
             </ul>
         </div>

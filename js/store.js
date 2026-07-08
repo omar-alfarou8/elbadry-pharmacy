@@ -179,29 +179,57 @@ function updateGridActionsUI() {
     });
 }
 
-// Filtering dynamically from Firebase Categories
-const storeFiltersContainer = document.getElementById('storeFiltersContainer');
+// Filtering dynamically from Firebase Categories using Premium Category Cards
+const categoriesGrid = document.getElementById('categoriesGrid');
 
-if (storeFiltersContainer) {
+if (categoriesGrid) {
     onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
-        storeFiltersContainer.innerHTML = '<button class="filter-btn active" data-filter="all">الكل</button>';
+        categoriesGrid.innerHTML = '';
+
+        // Add the "All" (الكل) category card first
+        const allCard = document.createElement('div');
+        allCard.className = `category-card ${currentFilter === 'all' ? 'active' : ''}`;
+        allCard.setAttribute('data-filter', 'all');
+        allCard.innerHTML = `
+            <div class="category-icon-wrapper">
+                <i class="fa-solid fa-border-all"></i>
+            </div>
+            <div class="category-name">الكل</div>
+        `;
+        categoriesGrid.appendChild(allCard);
 
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
-            const btn = document.createElement('button');
-            btn.className = 'filter-btn';
-            btn.setAttribute('data-filter', cat.name);
-            btn.textContent = cat.name;
-            storeFiltersContainer.appendChild(btn);
+            const card = document.createElement('div');
+            card.className = `category-card ${currentFilter === cat.name ? 'active' : ''}`;
+            card.setAttribute('data-filter', cat.name);
+
+            let visualHtml = '';
+            if (cat.type === 'icon') {
+                visualHtml = `<i class="${cat.icon || 'fa-solid fa-tags'}"></i>`;
+            } else if (cat.type === 'image') {
+                visualHtml = `<img src="${cat.image || 'https://via.placeholder.com/150'}" alt="${cat.name}" class="category-img" loading="lazy">`;
+            } else {
+                visualHtml = `<i class="fa-solid fa-tags"></i>`;
+            }
+
+            card.innerHTML = `
+                <div class="category-icon-wrapper">
+                    ${visualHtml}
+                </div>
+                <div class="category-name">${cat.name}</div>
+            `;
+            categoriesGrid.appendChild(card);
         });
 
-        // Re-attach listeners to new filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
+        // Attach listeners to new category cards
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                const targetCard = e.currentTarget;
+                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+                targetCard.classList.add('active');
 
-                currentFilter = e.target.getAttribute('data-filter');
+                currentFilter = targetCard.getAttribute('data-filter');
                 applyFilters();
             });
         });
@@ -509,3 +537,138 @@ submitInlineOrderBtn.addEventListener('click', async (e) => {
 // Initialization
 loadProducts();
 updateCartUI();
+
+// ------------- Ads Slider Initialization & Autoplay -------------
+const storeSliderContainer = document.getElementById('storeSliderContainer');
+const storeDefaultHeader = document.getElementById('storeDefaultHeader');
+const storeSliderWrapper = document.getElementById('storeSliderWrapper');
+const sliderDotsContainer = document.getElementById('sliderDotsContainer');
+const sliderPrevBtn = document.getElementById('sliderPrevBtn');
+const sliderNextBtn = document.getElementById('sliderNextBtn');
+
+let currentSlideIdx = 0;
+let slideInterval = null;
+let slidesCount = 0;
+
+function setupSlider(slides) {
+    if (!storeSliderContainer || !storeSliderWrapper) return;
+
+    if (slides.length === 0) {
+        storeSliderContainer.style.display = 'none';
+        if (storeDefaultHeader) storeDefaultHeader.style.display = 'block';
+        return;
+    }
+
+    // Hide default header, show slider
+    if (storeDefaultHeader) storeDefaultHeader.style.display = 'none';
+    storeSliderContainer.style.display = 'block';
+
+    storeSliderWrapper.innerHTML = '';
+    if (sliderDotsContainer) sliderDotsContainer.innerHTML = '';
+    slidesCount = slides.length;
+    currentSlideIdx = 0;
+
+    slides.forEach((slide, idx) => {
+        // Create Slide Item
+        const slideItem = document.createElement('div');
+        slideItem.className = `slide-item ${idx === 0 ? 'active' : ''}`;
+        
+        // Wrap with a link if it exists
+        const linkHref = slide.link ? slide.link : '#';
+        const targetAttr = slide.link && (slide.link.startsWith('http://') || slide.link.startsWith('https://')) ? 'target="_blank"' : '';
+        
+        slideItem.innerHTML = `
+            <a href="${linkHref}" ${targetAttr} class="slide-link" style="display:block; width:100%; height:100%;">
+                <img src="${slide.image}" alt="${slide.title || 'Ad'}" class="slide-img" loading="lazy">
+                ${(slide.title || slide.description) ? `
+                    <div class="slide-overlay-content">
+                        ${slide.title ? `<h2 class="slide-title">${slide.title}</h2>` : ''}
+                        ${slide.description ? `<p class="slide-desc">${slide.description}</p>` : ''}
+                    </div>
+                ` : ''}
+            </a>
+        `;
+        storeSliderWrapper.appendChild(slideItem);
+
+        // Create Navigation Dot
+        if (sliderDotsContainer) {
+            const dot = document.createElement('span');
+            dot.className = `slider-dot ${idx === 0 ? 'active' : ''}`;
+            dot.addEventListener('click', () => {
+                goToSlide(idx);
+            });
+            sliderDotsContainer.appendChild(dot);
+        }
+    });
+
+    startSlideShow();
+}
+
+function goToSlide(idx) {
+    const slideItems = document.querySelectorAll('.slide-item');
+    const dots = document.querySelectorAll('.slider-dot');
+    
+    if (slideItems.length === 0) return;
+    
+    // Normalize index
+    if (idx >= slideItems.length) idx = 0;
+    if (idx < 0) idx = slideItems.length - 1;
+    
+    currentSlideIdx = idx;
+    
+    slideItems.forEach((item, index) => {
+        item.classList.remove('active');
+        if (index === idx) {
+            item.classList.add('active');
+        }
+    });
+    
+    dots.forEach((dot, index) => {
+        dot.classList.remove('active');
+        if (index === idx) {
+            dot.classList.add('active');
+        }
+    });
+}
+
+function startSlideShow() {
+    stopSlideShow();
+    if (slidesCount <= 1) return;
+    slideInterval = setInterval(() => {
+        goToSlide(currentSlideIdx + 1);
+    }, 5000); // Change slide every 5 seconds
+}
+
+function stopSlideShow() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+        slideInterval = null;
+    }
+}
+
+// Pause autoplay on hover
+if (storeSliderContainer) {
+    storeSliderContainer.addEventListener('mouseenter', stopSlideShow);
+    storeSliderContainer.addEventListener('mouseleave', startSlideShow);
+}
+
+if (sliderPrevBtn) {
+    sliderPrevBtn.addEventListener('click', () => {
+        goToSlide(currentSlideIdx - 1);
+    });
+}
+
+if (sliderNextBtn) {
+    sliderNextBtn.addEventListener('click', () => {
+        goToSlide(currentSlideIdx + 1);
+    });
+}
+
+// Fetch ads slides from Firestore
+onSnapshot(query(collection(db, 'slides'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const slides = [];
+    snapshot.forEach(docSnap => {
+        slides.push(docSnap.data());
+    });
+    setupSlider(slides);
+});

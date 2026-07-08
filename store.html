@@ -42,11 +42,21 @@
         </div>
     </header>
 
-    <div class="store-header">
+    <!-- Ads Slider Container -->
+    <div class="store-slider-container" id="storeSliderContainer" style="display: none;">
+        <div class="store-slider-wrapper" id="storeSliderWrapper">
+            <!-- Dynamic slides go here -->
+        </div>
+        <button class="slider-arrow prev" id="sliderPrevBtn"><i class="fa-solid fa-chevron-right"></i></button>
+        <button class="slider-arrow next" id="sliderNextBtn"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="slider-dots" id="sliderDotsContainer"></div>
+    </div>
+
+    <!-- Fallback Header if no slides -->
+    <div class="store-header" id="storeDefaultHeader">
         <div class="container">
             <h1>متجر صيدلية البدري</h1>
-            <p style="font-size: 18px; max-width: 600px; margin: 0 auto; opacity: 0.9;">تصفح مجموعتنا الواسعة من
-                الأدوية، مستحضرات التجميل، والإكسسوارات الطبية.</p>
+            <p style="font-size: 18px; max-width: 600px; margin: 0 auto; opacity: 0.9;">تصفح مجموعتنا الواسعة من الأدوية، مستحضرات التجميل، والإكسسوارات الطبية.</p>
         </div>
     </div>
 
@@ -63,9 +73,12 @@
             </div>
         </div>
 
-        <div class="store-filters" id="storeFiltersContainer">
-            <button class="filter-btn active" data-filter="all">الكل</button>
-            <!-- Dynamic filters here -->
+        <!-- Categories Section -->
+        <div class="store-categories-section">
+            <h2 class="categories-title">تصفح الأقسام الرئيسية</h2>
+            <div class="categories-grid" id="categoriesGrid">
+                <!-- Dynamic premium category cards go here -->
+            </div>
         </div>
 
         <div class="products-grid" id="productsGrid">
