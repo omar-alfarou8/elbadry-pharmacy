@@ -191,11 +191,10 @@ if (categoriesGrid) {
     onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
         categoriesGrid.innerHTML = '';
 
-        // Add the "All" (الكل) category card first as a real link
+        // Add the "All" (الكل) category card first as a real link pointing to store.html (always active on store.html)
         const allCard = document.createElement('a');
-        allCard.className = `category-card ${currentFilter === 'all' ? 'active' : ''}`;
+        allCard.className = 'category-card active';
         allCard.href = 'store.html';
-        allCard.setAttribute('data-filter', 'all');
         allCard.innerHTML = `
             <div class="category-icon-wrapper">
                 <i class="fa-solid fa-border-all"></i>
@@ -207,16 +206,8 @@ if (categoriesGrid) {
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
             const card = document.createElement('a');
-            card.className = `category-card ${currentFilter === cat.name ? 'active' : ''}`;
-            
-            // Set redirect URL or filter URL
-            if (cat.link && cat.link.trim() !== '') {
-                card.href = cat.link.trim();
-                card.setAttribute('data-custom-link', 'true');
-            } else {
-                card.href = `store.html?category=${encodeURIComponent(cat.name)}`;
-                card.setAttribute('data-filter', cat.name);
-            }
+            card.className = 'category-card';
+            card.href = `category.html?name=${encodeURIComponent(cat.name)}`;
 
             let visualHtml = '';
             if (cat.type === 'icon') {
@@ -234,30 +225,6 @@ if (categoriesGrid) {
                 <div class="category-name">${cat.name}</div>
             `;
             categoriesGrid.appendChild(card);
-        });
-
-        // Attach listeners to new category cards
-        document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const targetCard = e.currentTarget;
-                
-                // If this is a custom redirect link, let it navigate natively!
-                if (targetCard.getAttribute('data-custom-link') === 'true') {
-                    return; // Do not call preventDefault
-                }
-                
-                e.preventDefault(); // Stop standard redirect for filter categories
-                
-                document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
-                targetCard.classList.add('active');
-
-                currentFilter = targetCard.getAttribute('data-filter') || 'all';
-                applyFilters();
-
-                // Update URL parameter dynamically without page reload
-                const newUrl = currentFilter === 'all' ? 'store.html' : `store.html?category=${encodeURIComponent(currentFilter)}`;
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            });
         });
     });
 }
