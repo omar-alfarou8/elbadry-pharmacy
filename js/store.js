@@ -63,6 +63,11 @@ async function loadProducts() {
 }
 
 let currentFilter = 'all';
+const urlParams = new URLSearchParams(window.location.search);
+const catParam = urlParams.get('category');
+if (catParam) {
+    currentFilter = decodeURIComponent(catParam);
+}
 let currentSearch = '';
 
 function applyFilters() {
@@ -231,6 +236,10 @@ if (categoriesGrid) {
 
                 currentFilter = targetCard.getAttribute('data-filter');
                 applyFilters();
+
+                // Update URL parameter dynamically without page reload
+                const newUrl = currentFilter === 'all' ? 'store.html' : `store.html?category=${encodeURIComponent(currentFilter)}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
             });
         });
     });
