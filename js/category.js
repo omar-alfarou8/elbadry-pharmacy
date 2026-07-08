@@ -13,6 +13,8 @@ const categoryName = urlParams.get('name') ? decodeURIComponent(urlParams.get('n
 if (categoryName) {
     document.title = `${categoryName} - صيدلية البدري`;
     if (categoryPageTitle) categoryPageTitle.textContent = categoryName;
+    const categorySectionTitle = document.getElementById('categorySectionTitle');
+    if (categorySectionTitle) categorySectionTitle.textContent = categoryName;
 } else {
     document.title = `القسم - صيدلية البدري`;
     if (categoryPageTitle) categoryPageTitle.textContent = 'القسم غير محدد';
@@ -491,3 +493,142 @@ if (inlineForm) {
 // Initialization
 loadProducts();
 updateCartUI();
+
+// ------------- Ads Slider Initialization & Autoplay -------------
+const storeSliderContainer = document.getElementById('storeSliderContainer');
+const storeDefaultHeader = document.getElementById('storeDefaultHeader');
+const storeSliderWrapper = document.getElementById('storeSliderWrapper');
+const sliderDotsContainer = document.getElementById('sliderDotsContainer');
+const sliderPrevBtn = document.getElementById('sliderPrevBtn');
+const sliderNextBtn = document.getElementById('sliderNextBtn');
+
+let currentSlideIdx = 0;
+let slideInterval = null;
+let slidesCount = 0;
+
+function setupSlider(slides) {
+    if (!storeSliderContainer || !storeSliderWrapper) return;
+
+    if (slides.length === 0) {
+        storeSliderContainer.style.display = 'none';
+        if (storeDefaultHeader) storeDefaultHeader.style.display = 'block';
+        const categorySectionTitle = document.getElementById('categorySectionTitle');
+        if (categorySectionTitle) categorySectionTitle.style.display = 'none';
+        return;
+    }
+
+    // Hide default header, show slider and inline section title
+    if (storeDefaultHeader) storeDefaultHeader.style.display = 'none';
+    storeSliderContainer.style.display = 'block';
+    const categorySectionTitle = document.getElementById('categorySectionTitle');
+    if (categorySectionTitle) categorySectionTitle.style.display = 'block';
+
+    storeSliderWrapper.innerHTML = '';
+    if (sliderDotsContainer) sliderDotsContainer.innerHTML = '';
+    slidesCount = slides.length;
+    currentSlideIdx = 0;
+
+    slides.forEach((slide, idx) => {
+        // Create Slide Item
+        const slideItem = document.createElement('div');
+        slideItem.className = `slide-item ${idx === 0 ? 'active' : ''}`;
+        
+        // Wrap with a link if it exists
+        const linkHref = slide.link ? slide.link : '#';
+        const targetAttr = slide.link && (slide.link.startsWith('http://') || slide.link.startsWith('https://')) ? 'target="_blank"' : '';
+        
+        slideItem.innerHTML = `
+            <a href="${linkHref}" ${targetAttr} class="slide-link" style="display:block; width:100%; height:100%;">
+                <img src="${slide.image}" alt="${slide.title || 'Ad'}" class="slide-img" loading="lazy">
+                ${(slide.title || slide.description) ? `
+                    <div class="slide-overlay-content">
+                        ${slide.title ? `<h2 class="slide-title">${slide.title}</h2>` : ''}
+                        ${slide.description ? `<p class="slide-desc">${slide.description}</p>` : ''}
+                    </div>
+                ` : ''}
+            </a>
+        `;
+        storeSliderWrapper.appendChild(slideItem);
+
+        // Create Navigation Dot
+        if (sliderDotsContainer) {
+            const dot = document.createElement('span');
+            dot.className = `slider-dot ${idx === 0 ? 'active' : ''}`;
+            dot.addEventListener('click', () => {
+                goToSlide(idx);
+            });
+            sliderDotsContainer.appendChild(dot);
+        }
+    });
+
+    startSlideShow();
+}
+
+function goToSlide(idx) {
+    const slideItems = document.querySelectorAll('.slide-item');
+    const dots = document.querySelectorAll('.slider-dot');
+    
+    if (slideItems.length === 0) return;
+    
+    // Normalize index
+    if (idx >= slideItems.length) idx = 0;
+    if (idx < 0) idx = slideItems.length - 1;
+    
+    currentSlideIdx = idx;
+    
+    slideItems.forEach((item, index) => {
+        item.classList.remove('active');
+        if (index === idx) {
+            item.classList.add('active');
+        }
+    });
+    
+    dots.forEach((dot, index) => {
+        dot.classList.remove('active');
+        if (index === idx) {
+            dot.classList.add('active');
+        }
+    });
+}
+
+function startSlideShow() {
+    stopSlideShow();
+    if (slidesCount <= 1) return;
+    slideInterval = setInterval(() => {
+        goToSlide(currentSlideIdx + 1);
+    }, 5000); // Change slide every 5 seconds
+}
+
+function stopSlideShow() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+        slideInterval = null;
+    }
+}
+
+// Pause autoplay on hover
+if (storeSliderContainer) {
+    storeSliderContainer.addEventListener('mouseenter', stopSlideShow);
+    storeSliderContainer.addEventListener('mouseleave', startSlideShow);
+}
+
+if (sliderPrevBtn) {
+    sliderPrevBtn.addEventListener('click', () => {
+        goToSlide(currentSlideIdx - 1);
+    });
+}
+
+if (sliderNextBtn) {
+    sliderNextBtn.addEventListener('click', () => {
+        goToSlide(currentSlideIdx + 1);
+    });
+}
+
+// Fetch ads slides from Firestore
+onSnapshot(query(collection(db, 'slides'), orderBy('createdAt', 'desc')), (snapshot) => {
+    const slides = [];
+    snapshot.forEach(docSnap => {
+        slides.push(docSnap.data());
+    });
+    setupSlider(slides);
+});

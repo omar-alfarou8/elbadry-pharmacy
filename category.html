@@ -42,7 +42,18 @@
         </div>
     </header>
 
-    <div class="store-header" style="background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);">
+    <!-- Ads Slider Container -->
+    <div class="store-slider-container" id="storeSliderContainer" style="display: none;">
+        <div class="store-slider-wrapper" id="storeSliderWrapper">
+            <!-- Dynamic slides go here -->
+        </div>
+        <button class="slider-arrow prev" id="sliderPrevBtn"><i class="fa-solid fa-chevron-right"></i></button>
+        <button class="slider-arrow next" id="sliderNextBtn"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="slider-dots" id="sliderDotsContainer"></div>
+    </div>
+
+    <!-- Default Category Header -->
+    <div class="store-header" id="storeDefaultHeader" style="background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);">
         <div class="container">
             <h1 id="categoryPageTitle">جاري تحميل القسم...</h1>
             <p style="font-size: 18px; max-width: 600px; margin: 20px auto 0 auto; opacity: 0.9;">تصفح المنتجات المتوفرة في هذا القسم بالصيدلية.</p>
@@ -51,6 +62,9 @@
 
     <!-- Main Content -->
     <main class="container" style="min-height: 50vh;">
+
+        <!-- Section Title (Shown when slider is active to keep context) -->
+        <h2 id="categorySectionTitle" style="font-size: 28px; font-weight: 900; color: var(--secondary-color); margin-top: 30px; display: none;">القسم</h2>
 
         <!-- Back Button & Search Bar Row -->
         <div style="margin-top: 30px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -243,6 +257,13 @@
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2026 صيدلية البدري. جميع الحقوق محفوظة.</p>
+                <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8; letter-spacing: 1px;">
+                    DEVELOPED BY <a href="https://wa.me/201040981238" target="_blank"
+                        style="color: #fff; font-weight: 800; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 2px; transition: all 0.3s;"
+                        onmouseover="this.style.borderBottom='1px solid #fff'; this.style.color='var(--primary-light)';"
+                        onmouseout="this.style.borderBottom='1px solid rgba(255,255,255,0.3)'; this.style.color='#fff';">OMAR
+                        ALFAROUK</a>
+                </p>
             </div>
         </div>
     </footer>
