@@ -75,49 +75,24 @@ async function loadProducts() {
             return;
         }
 
-        const now = Date.now();
+        // Fetch categories to get discounts first
+        const categoriesSnapshot = await getDocs(collection(db, "categories"));
+        categoryDiscounts = {};
+        categoriesSnapshot.forEach(docSnap => {
+            const cat = docSnap.data();
+            categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+        });
 
-        // 1. Get Categories Discounts from sessionStorage or fetch
-        const cachedCats = sessionStorage.getItem('elbadry_categories_discounts_cache');
-        const cachedCatsTime = sessionStorage.getItem('elbadry_categories_cache_time');
-        
-        if (cachedCats && cachedCatsTime && (now - Number(cachedCatsTime) < 10 * 60 * 1000)) {
-            categoryDiscounts = JSON.parse(cachedCats);
-        } else {
-            const categoriesSnapshot = await getDocs(collection(db, "categories"));
-            categoryDiscounts = {};
-            categoriesSnapshot.forEach(docSnap => {
-                const cat = docSnap.data();
-                categoryDiscounts[cat.name] = Number(cat.discount) || 0;
-            });
-            sessionStorage.setItem('elbadry_categories_discounts_cache', JSON.stringify(categoryDiscounts));
-            sessionStorage.setItem('elbadry_categories_cache_time', String(now));
-        }
+        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
 
-        // 2. Get Products from sessionStorage cache or fetch
-        let productsList = [];
-        const cachedProds = sessionStorage.getItem('elbadry_products_cache');
-        const cachedProdsTime = sessionStorage.getItem('elbadry_products_cache_time');
-        
-        if (cachedProds && cachedProdsTime && (now - Number(cachedProdsTime) < 10 * 60 * 1000)) {
-            productsList = JSON.parse(cachedProds);
-        } else {
-            const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach((doc) => {
-                productsList.push({ id: doc.id, ...doc.data() });
-            });
-            sessionStorage.setItem('elbadry_products_cache', JSON.stringify(productsList));
-            sessionStorage.setItem('elbadry_products_cache_time', String(now));
-        }
-
-        // 3. Filter products matching the category
         allProducts = [];
-        productsList.forEach((prod) => {
-            const cats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const cats = Array.isArray(data.category) ? data.category : [data.category || ''];
             // Match category name
             if (cats.some(c => c.includes(categoryName) || categoryName.includes(c))) {
-                allProducts.push(prod);
+                allProducts.push({ id: doc.id, ...data });
             }
         });
 

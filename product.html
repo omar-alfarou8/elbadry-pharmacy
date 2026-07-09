@@ -5,26 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تفاصيل المنتج - صيدلية البدري</title>
-    <script>
-        (function() {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const productId = urlParams.get('id');
-                if (productId) {
-                    const cachedData = sessionStorage.getItem('elbadry_products_cache');
-                    if (cachedData) {
-                        const products = JSON.parse(cachedData);
-                        const product = products.find(p => p.id === productId);
-                        if (product && product.name) {
-                            document.title = product.name + " - صيدلية البدري";
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        })();
-    </script>
     <link rel="icon" type="image/png" href="/logologo.png">
 
     <!-- Google Fonts -->

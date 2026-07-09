@@ -241,7 +241,6 @@ if (categoriesGrid) {
     onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
         categoriesGrid.innerHTML = '';
         categoryDiscounts = {}; // Clear and re-populate
-        const categoriesList = [];
 
         // Add the "All" (الكل) category card first as a real link pointing to store.html (always active on store.html)
         const allCard = document.createElement('a');
@@ -258,7 +257,6 @@ if (categoriesGrid) {
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
             categoryDiscounts[cat.name] = Number(cat.discount) || 0;
-            categoriesList.push({ id: docSnap.id, ...cat });
 
             const card = document.createElement('a');
             card.className = 'category-card';
@@ -283,11 +281,6 @@ if (categoriesGrid) {
             `;
             categoriesGrid.appendChild(card);
         });
-
-        // Save categories to sessionStorage cache
-        sessionStorage.setItem('elbadry_categories_discounts_cache', JSON.stringify(categoryDiscounts));
-        sessionStorage.setItem('elbadry_categories_list_cache', JSON.stringify(categoriesList));
-        sessionStorage.setItem('elbadry_categories_cache_time', String(Date.now()));
 
         // Trigger filter refresh if products cache is already present
         if (allProducts.length > 0) {
