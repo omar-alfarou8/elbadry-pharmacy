@@ -1013,12 +1013,37 @@ if (slideImageUrlInput) {
     });
 }
 
+let allSlides = {};
+
+window.resetSlideForm = function() {
+    if (slideForm) slideForm.reset();
+    document.getElementById('slideId').value = '';
+    
+    if (saveSlideBtn) saveSlideBtn.innerHTML = 'إضافة الشريحة الإعلانية';
+    
+    const cancelSlideEditBtn = document.getElementById('cancelSlideEditBtn');
+    if (cancelSlideEditBtn) cancelSlideEditBtn.style.display = 'none';
+
+    selectedSlideImageFile = null;
+    if (slideImageFile) slideImageFile.value = '';
+    if (slideImageUrlInput) slideImageUrlInput.value = '';
+    if (slideImagePreviewContainer) slideImagePreviewContainer.style.display = 'none';
+};
+
+const cancelSlideEditBtn = document.getElementById('cancelSlideEditBtn');
+if (cancelSlideEditBtn) {
+    cancelSlideEditBtn.addEventListener('click', () => {
+        resetSlideForm();
+    });
+}
+
 if (slideForm) {
     slideForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         saveSlideBtn.innerHTML = 'جاري الحفظ... <span class="spinner"></span>';
         saveSlideBtn.disabled = true;
 
+        const id = document.getElementById('slideId').value;
         const title = document.getElementById('slideTitle').value.trim();
         const description = document.getElementById('slideDescription').value.trim();
         const link = document.getElementById('slideLink').value.trim();
@@ -1036,23 +1061,25 @@ if (slideForm) {
                 title,
                 description,
                 link,
-                image,
-                createdAt: new Date()
+                image
             };
 
-            await addDoc(slidesCol, slideData);
+            if (id) {
+                await updateDoc(doc(db, 'slides', id), slideData);
+                alert('تم تعديل الشريحة الإعلانية بنجاح!');
+            } else {
+                slideData.createdAt = new Date();
+                await addDoc(slidesCol, slideData);
+                alert('تم إضافة الشريحة الإعلانية بنجاح!');
+            }
 
-            // Reset form
-            slideForm.reset();
-            selectedSlideImageFile = null;
-            if (slideImageFile) slideImageFile.value = '';
-            slideImagePreviewContainer.style.display = 'none';
+            resetSlideForm();
 
         } catch (error) {
             console.error("Error saving slide: ", error);
-            alert('حدث خطأ أثناء إضافة الشريحة.');
+            alert('حدث خطأ أثناء حفظ الشريحة.');
         } finally {
-            saveSlideBtn.innerHTML = 'إضافة الشريحة الإعلانية';
+            saveSlideBtn.innerHTML = id ? 'تعديل الشريحة الإعلانية' : 'إضافة الشريحة الإعلانية';
             saveSlideBtn.disabled = false;
         }
     });
@@ -1062,6 +1089,7 @@ if (slideForm) {
 if (slidesTableBody) {
     onSnapshot(query(slidesCol, orderBy('createdAt', 'desc')), (snapshot) => {
         slidesTableBody.innerHTML = '';
+        allSlides = {};
         if (snapshot.empty) {
             slidesTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-gray);">لا توجد إعلانات نشطة حالياً.</td></tr>`;
             return;
@@ -1070,6 +1098,7 @@ if (slidesTableBody) {
         snapshot.forEach(docSnap => {
             const slide = docSnap.data();
             const id = docSnap.id;
+            allSlides[id] = slide;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -1078,6 +1107,7 @@ if (slidesTableBody) {
                 <td>${slide.description || 'بدون وصف'}</td>
                 <td><a href="${slide.link}" target="_blank" style="color: var(--primary-color); word-break: break-all;">${slide.link}</a></td>
                 <td>
+                    <button class="action-btn edit-btn" style="color: var(--primary-color); margin-left: 8px;" onclick="editSlide('${id}')"><i class="fa-solid fa-pen"></i></button>
                     <button class="action-btn delete-btn" onclick="deleteSlide('${id}')"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
@@ -1085,6 +1115,37 @@ if (slidesTableBody) {
         });
     });
 }
+
+window.editSlide = function(id) {
+    const slide = allSlides[id];
+    if (!slide) return;
+
+    document.getElementById('slideId').value = id;
+    document.getElementById('slideTitle').value = slide.title || '';
+    document.getElementById('slideDescription').value = slide.description || '';
+    document.getElementById('slideLink').value = slide.link || '';
+    document.getElementById('slideImage').value = slide.image || '';
+
+    if (slide.image && slideImagePreview && slideImagePreviewContainer) {
+        slideImagePreview.src = slide.image;
+        slideImagePreviewContainer.style.display = 'block';
+    } else if (slideImagePreviewContainer) {
+        slideImagePreviewContainer.style.display = 'none';
+    }
+
+    selectedSlideImageFile = null;
+    if (slideImageFile) slideImageFile.value = '';
+
+    if (saveSlideBtn) saveSlideBtn.innerHTML = 'حفظ التعديلات';
+    
+    const cancelSlideEditBtn = document.getElementById('cancelSlideEditBtn');
+    if (cancelSlideEditBtn) cancelSlideEditBtn.style.display = 'block';
+
+    const slideForm = document.getElementById('slideForm');
+    if (slideForm) {
+        slideForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
 
 window.deleteSlide = async function(id) {
     if (confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟')) {
