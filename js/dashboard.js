@@ -411,13 +411,21 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         // Modal List
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
+        
+        const safeCatName = cat.name.replace(/'/g, "\\'");
+        const safeIcon = (cat.icon || '').replace(/'/g, "\\'");
+        const safeImage = (cat.image || '').replace(/'/g, "\\'");
+
         li.innerHTML = `
             <div style="display: flex; align-items: center;">
                 ${visualHtml}
                 <span style="font-weight: bold;">${cat.name}</span>
                 ${discountHtml}
             </div>
-            <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="editCategory('${id}', '${safeCatName}', '${cat.type || 'icon'}', '${safeIcon}', '${safeImage}', ${cat.discount || 0})" style="background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
+            </div>
         `;
         categoriesList.appendChild(li);
 
@@ -448,11 +456,75 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
     });
 });
 
+window.editCategory = function (id, name, type, icon, image, discount) {
+    document.getElementById('editCategoryId').value = id;
+    document.getElementById('newCategoryName').value = name;
+    
+    const newCategoryDiscount = document.getElementById('newCategoryDiscount');
+    if (newCategoryDiscount) {
+        newCategoryDiscount.value = discount || '';
+    }
+    
+    const typeSelect = document.getElementById('newCategoryType');
+    if (typeSelect) {
+        typeSelect.value = type;
+        typeSelect.dispatchEvent(new Event('change'));
+    }
+    
+    if (type === 'icon') {
+        document.getElementById('selectedIconClass').value = icon;
+        const iconOptions = document.querySelectorAll('.icon-option');
+        iconOptions.forEach(opt => {
+            if (opt.getAttribute('data-icon') === icon) {
+                opt.classList.add('active');
+                opt.style.borderColor = 'var(--primary-color)';
+                opt.style.background = 'rgba(11,128,122,0.05)';
+                opt.style.color = 'var(--primary-color)';
+            } else {
+                opt.classList.remove('active');
+                opt.style.borderColor = 'var(--border-color)';
+                opt.style.background = 'none';
+                opt.style.color = 'var(--text-gray)';
+            }
+        });
+    } else {
+        document.getElementById('categoryImage').value = image;
+    }
+    
+    document.getElementById('addCategoryBtn').textContent = 'حفظ تعديلات القسم';
+    document.getElementById('cancelEditCategoryBtn').style.display = 'block';
+};
+
+window.resetCategoryForm = function () {
+    document.getElementById('editCategoryId').value = '';
+    document.getElementById('newCategoryName').value = '';
+    
+    const newCategoryDiscount = document.getElementById('newCategoryDiscount');
+    if (newCategoryDiscount) newCategoryDiscount.value = '';
+    
+    const imageInput = document.getElementById('categoryImage');
+    if (imageInput) imageInput.value = '';
+    
+    const imageFile = document.getElementById('categoryImageFile');
+    if (imageFile) imageFile.value = '';
+    
+    document.getElementById('addCategoryBtn').textContent = 'إضافة القسم الجديد';
+    document.getElementById('cancelEditCategoryBtn').style.display = 'none';
+};
+
+const cancelEditCategoryBtn = document.getElementById('cancelEditCategoryBtn');
+if (cancelEditCategoryBtn) {
+    cancelEditCategoryBtn.addEventListener('click', () => {
+        resetCategoryForm();
+    });
+}
+
 if (addCategoryBtn) {
     addCategoryBtn.addEventListener('click', async () => {
         const val = newCategoryName.value.trim();
+        const editId = document.getElementById('editCategoryId').value;
         if (val) {
-            addCategoryBtn.innerHTML = 'جاري الإضافة... <i class="fa-solid fa-spinner fa-spin"></i>';
+            addCategoryBtn.innerHTML = editId ? 'جاري الحفظ... <i class="fa-solid fa-spinner fa-spin"></i>' : 'جاري الإضافة... <i class="fa-solid fa-spinner fa-spin"></i>';
             addCategoryBtn.disabled = true;
             
             const type = document.getElementById('newCategoryType').value;
@@ -479,26 +551,27 @@ if (addCategoryBtn) {
                     }
                 }
                 
-                await addDoc(categoriesCol, { 
+                const catData = { 
                     name: val, 
                     type: type,
                     icon: icon,
                     image: image,
-                    discount: Number(discount) || 0,
-                    createdAt: new Date() 
-                });
+                    discount: Number(discount) || 0
+                };
+
+                if (editId) {
+                    await updateDoc(doc(db, 'categories', editId), catData);
+                } else {
+                    catData.createdAt = new Date();
+                    await addDoc(categoriesCol, catData);
+                }
                 
-                // Reset fields
-                newCategoryName.value = '';
-                if (discountInput) discountInput.value = '';
-                document.getElementById('categoryImage').value = '';
-                const fileInput = document.getElementById('categoryImageFile');
-                if (fileInput) fileInput.value = '';
+                resetCategoryForm();
             } catch (err) {
-                console.error("Error adding category:", err);
-                alert("حدث خطأ أثناء إضافة القسم.");
+                console.error("Error saving category:", err);
+                alert("حدث خطأ أثناء حفظ القسم.");
             } finally {
-                addCategoryBtn.textContent = 'إضافة القسم الجديد';
+                addCategoryBtn.textContent = editId ? 'حفظ تعديلات القسم' : 'إضافة القسم الجديد';
                 addCategoryBtn.disabled = false;
             }
         }

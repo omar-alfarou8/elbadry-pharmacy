@@ -465,7 +465,11 @@
 
 
 
-                <button class="btn-primary" id="addCategoryBtn" style="width: 100%; padding: 12px;">إضافة القسم الجديد</button>
+                <input type="hidden" id="editCategoryId">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" id="addCategoryBtn" style="flex: 1; padding: 12px;">إضافة القسم الجديد</button>
+                    <button class="btn-outline" id="cancelEditCategoryBtn" style="display: none; padding: 12px; border-radius: 8px;">إلغاء</button>
+                </div>
             </div>
 
             <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto;">
@@ -478,7 +482,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- Scripts -->
-    <script type="module" src="js/dashboard.js?v=6"></script>
+    <script type="module" src="js/dashboard.js?v=7"></script>
     <script src="js/dashboard-ui.js?v=4"></script>
 </body>
 
