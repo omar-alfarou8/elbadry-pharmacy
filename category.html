@@ -5,7 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>القسم - صيدلية البدري</title>
-    <link rel="icon" type="image/png" href="logologo.png"> <!-- Google Fonts -->
+    <script>
+        (function() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const categoryName = urlParams.get('name');
+                if (categoryName) {
+                    document.title = decodeURIComponent(categoryName).trim() + " - صيدلية البدري";
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="/logologo.png"> <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
@@ -56,6 +69,20 @@
     <div class="store-header" id="storeDefaultHeader" style="background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);">
         <div class="container">
             <h1 id="categoryPageTitle">جاري تحميل القسم...</h1>
+            <script>
+                (function() {
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const categoryName = urlParams.get('name');
+                        if (categoryName) {
+                            const decName = decodeURIComponent(categoryName).trim();
+                            document.getElementById('categoryPageTitle').textContent = decName;
+                            const sectionTitle = document.getElementById('categorySectionTitle');
+                            if (sectionTitle) sectionTitle.textContent = decName;
+                        }
+                    } catch(e) {}
+                })();
+            </script>
             <p style="font-size: 18px; max-width: 600px; margin: 20px auto 0 auto; opacity: 0.9;">تصفح المنتجات المتوفرة في هذا القسم بالصيدلية.</p>
         </div>
     </div>

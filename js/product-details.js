@@ -53,6 +53,29 @@ onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
 let currentProduct = null;
 let selectedQty = 1;
 
+async function loadCategoryDiscounts() {
+    const cachedCats = sessionStorage.getItem('elbadry_categories_discounts_cache');
+    const cachedCatsTime = sessionStorage.getItem('elbadry_categories_cache_time');
+    const now = Date.now();
+    
+    if (cachedCats && cachedCatsTime && (now - Number(cachedCatsTime) < 10 * 60 * 1000)) {
+        categoryDiscounts = JSON.parse(cachedCats);
+    } else {
+        try {
+            const categoriesSnapshot = await getDocs(collection(db, "categories"));
+            categoryDiscounts = {};
+            categoriesSnapshot.forEach(docSnap => {
+                const cat = docSnap.data();
+                categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            });
+            sessionStorage.setItem('elbadry_categories_discounts_cache', JSON.stringify(categoryDiscounts));
+            sessionStorage.setItem('elbadry_categories_cache_time', String(now));
+        } catch (e) {
+            console.error("Error loading categories for discounts:", e);
+        }
+    }
+}
+
 // Load Product Details
 async function loadProductDetails() {
     if (!productId) {
@@ -61,14 +84,23 @@ async function loadProductDetails() {
     }
 
     try {
-        // Fetch categories to get discounts
-        const categoriesSnapshot = await getDocs(collection(db, "categories"));
-        categoryDiscounts = {};
-        categoriesSnapshot.forEach(docSnap => {
-            const cat = docSnap.data();
-            categoryDiscounts[cat.name] = Number(cat.discount) || 0;
-        });
+        // Load category discounts (using cache if available)
+        await loadCategoryDiscounts();
 
+        // Check if products cache exists and contains the product
+        const cachedProds = sessionStorage.getItem('elbadry_products_cache');
+        if (cachedProds) {
+            const products = JSON.parse(cachedProds);
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                currentProduct = product;
+                renderProductDetails(currentProduct);
+                loadRelatedProducts(currentProduct.category, currentProduct.id);
+                return;
+            }
+        }
+
+        // Fallback: fetch single product details from Firestore
         const docRef = doc(db, "products", productId);
         const docSnap = await getDoc(docRef);
 
@@ -235,22 +267,30 @@ function renderProductDetails(prod) {
 async function loadRelatedProducts(category, currentId) {
     try {
         const currentCats = Array.isArray(category) ? category : [category || ''];
+        let products = [];
 
-        const q = query(collection(db, "products"), limit(50));
-        const querySnapshot = await getDocs(q);
+        const cachedProds = sessionStorage.getItem('elbadry_products_cache');
+        if (cachedProds) {
+            products = JSON.parse(cachedProds);
+        } else {
+            // Fallback: fetch from Firestore if cache is empty
+            const q = query(collection(db, "products"), limit(50));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(docSnap => {
+                products.push({ id: docSnap.id, ...docSnap.data() });
+            });
+        }
 
         let count = 0;
         productsGrid.innerHTML = '';
 
-        querySnapshot.forEach((docSnap) => {
-            const prod = docSnap.data();
-            const id = docSnap.id;
-
+        products.forEach((prod) => {
+            const id = prod.id;
             const prodCats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
             const isRelated = prodCats.some(c => currentCats.includes(c));
 
             if (id !== currentId && isRelated && count < 4) {
-                const pricing = getProductPricing({ id, ...prod });
+                const pricing = getProductPricing(prod);
                 const badgeHtml = pricing.hasDiscount ? `<div class="discount-badge">-${pricing.discountPercent}%</div>` : '';
                 const priceHtml = pricing.hasDiscount 
                     ? `<span class="sale-price">${pricing.finalPrice} ج.م</span> <span class="original-price">${pricing.originalPrice} ج.م</span>`
