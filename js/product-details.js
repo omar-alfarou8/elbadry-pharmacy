@@ -1,8 +1,4 @@
-import { db } from './firebase-config.js';
-import { collection, query, orderBy, getDocs, addDoc, onSnapshot, doc, getDoc, limit, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// DOM Elements for Product Details
-const productDetailsContent = document.getElementById('productDetailsContent');
 const relatedProductsSection = document.getElementById('relatedProductsSection');
 const productsGrid = document.getElementById('productsGrid');
 
@@ -34,6 +30,14 @@ async function loadProductDetails() {
     }
 
     try {
+        // Fetch categories to get discounts
+        const categoriesSnapshot = await getDocs(collection(db, "categories"));
+        categoryDiscounts = {};
+        categoriesSnapshot.forEach(docSnap => {
+            const cat = docSnap.data();
+            categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+        });
+
         const docRef = doc(db, "products", productId);
         const docSnap = await getDoc(docRef);
 
@@ -66,6 +70,19 @@ function showErrorPage(message) {
 
 // Render Product Details
 function renderProductDetails(prod) {
+    const pricing = getProductPricing(prod);
+    const originalPriceHtml = pricing.hasDiscount ? `${pricing.finalPrice} ج.م` : `${pricing.originalPrice} ج.م`;
+
+    const priceBadgeHtml = pricing.hasDiscount 
+        ? `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+             <div class="details-price-badge" style="margin-bottom:0;">${pricing.finalPrice} ج.م</div>
+             <div style="text-decoration: line-through; color: var(--text-gray); font-size: 18px; font-weight: 500;">${pricing.originalPrice} ج.م</div>
+             <div style="background: var(--error-color); color: white; padding: 4px 10px; border-radius: 6px; font-size: 14px; font-weight: 800;">خصم ${pricing.discountPercent}%</div>
+           </div>`
+        : `<div class="details-price-badge" style="margin-bottom: 25px;">${pricing.originalPrice} ج.م</div>`;
+
+    const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
+
     productDetailsContent.innerHTML = `
         <div class="details-grid">
             <!-- Right Column: Image and Action Card -->
@@ -77,11 +94,11 @@ function renderProductDetails(prod) {
                 <div class="glass-card cart-action-card" style="margin-top: 25px; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 12px;">
                         <span style="font-weight: 700; color: var(--text-gray); font-size: 15px;">السعر الفردي:</span>
-                        <span style="font-weight: 900; color: var(--secondary-color); font-size: 18px;">${prod.price} ج.م</span>
+                        <span style="font-weight: 900; color: var(--secondary-color); font-size: 18px;">${originalPriceHtml}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 700; color: var(--text-gray); font-size: 15px;">سعر الكمية:</span>
-                        <span class="details-price" id="detailsPrice">${prod.price} ج.م</span>
+                        <span class="details-price" id="detailsPrice">${originalPriceHtml}</span>
                     </div>
                     
                     <div class="details-qty-block" style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 12px; background: rgba(0,0,0,0.01); margin-top: 5px;">
@@ -101,9 +118,9 @@ function renderProductDetails(prod) {
             
             <!-- Left Column: Detailed Info -->
             <div class="details-info-sec">
-                <div class="details-category-badge">${prod.category}</div>
+                <div class="details-category-badge">${categoryText}</div>
                 <h1 class="details-title">${prod.name}</h1>
-                <div class="details-price-badge" style="margin-bottom: 25px;">${prod.price} ج.م</div>
+                ${priceBadgeHtml}
                 
                 <!-- Tabs Container -->
                 <div class="details-tabs">
@@ -150,14 +167,16 @@ function renderProductDetails(prod) {
     document.getElementById('detailsQtyPlus').addEventListener('click', () => {
         selectedQty++;
         qtyVal.textContent = selectedQty;
-        totalPriceElt.textContent = `${(prod.price * selectedQty)} ج.م`;
+        const total = Math.round(pricing.finalPrice * selectedQty * 100) / 100;
+        totalPriceElt.textContent = `${total} ج.م`;
     });
 
     document.getElementById('detailsQtyMinus').addEventListener('click', () => {
         if (selectedQty > 1) {
             selectedQty--;
             qtyVal.textContent = selectedQty;
-            totalPriceElt.textContent = `${(prod.price * selectedQty)} ج.م`;
+            const total = Math.round(pricing.finalPrice * selectedQty * 100) / 100;
+            totalPriceElt.textContent = `${total} ج.م`;
         }
     });
 
@@ -184,11 +203,9 @@ function renderProductDetails(prod) {
 // Load Related Products
 async function loadRelatedProducts(category, currentId) {
     try {
-        const q = query(
-            collection(db, "products"),
-            where("category", "==", category),
-            limit(5)
-        );
+        const currentCats = Array.isArray(category) ? category : [category || ''];
+
+        const q = query(collection(db, "products"), limit(50));
         const querySnapshot = await getDocs(q);
 
         let count = 0;
@@ -198,21 +215,34 @@ async function loadRelatedProducts(category, currentId) {
             const prod = docSnap.data();
             const id = docSnap.id;
 
-            if (id !== currentId && count < 4) {
+            const prodCats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
+            const isRelated = prodCats.some(c => currentCats.includes(c));
+
+            if (id !== currentId && isRelated && count < 4) {
+                const pricing = getProductPricing({ id, ...prod });
+                const badgeHtml = pricing.hasDiscount ? `<div class="discount-badge">-${pricing.discountPercent}%</div>` : '';
+                const priceHtml = pricing.hasDiscount 
+                    ? `<span class="sale-price">${pricing.finalPrice} ج.م</span> <span class="original-price">${pricing.originalPrice} ج.م</span>`
+                    : `${pricing.originalPrice} ج.م`;
+
+                const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
+
                 const div = document.createElement('div');
                 div.className = 'product-card';
                 div.style.animation = 'fadeIn 0.5s ease forwards';
+                div.style.position = 'relative';
                 div.innerHTML = `
+                    ${badgeHtml}
                     <a href="product.html?id=${id}" style="display: block; overflow: hidden;">
                         <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
                     </a>
                     <div class="product-info">
-                        <div class="product-category">${prod.category}</div>
+                        <div class="product-category">${categoryText}</div>
                         <a href="product.html?id=${id}" style="color: inherit; text-decoration: none;">
                             <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
                         </a>
-                        <div class="product-price">${prod.price} ج.م</div>
-                        <div id="product-action-${id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
+                        <div class="product-price">${priceHtml}</div>
+                        <div id="product-action-${id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-img="${prod.image}">
                         </div>
                     </div>
                 `;
@@ -235,13 +265,14 @@ async function loadRelatedProducts(category, currentId) {
 
 function addToCartWithQty(product, qty) {
     const existing = cart.find(item => item.id === product.id);
+    const pricing = getProductPricing(product);
     if (existing) {
         existing.quantity += qty;
     } else {
         cart.push({
             id: product.id,
             name: product.name,
-            price: product.price,
+            price: pricing.finalPrice,
             image: product.image,
             quantity: qty
         });

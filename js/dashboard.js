@@ -54,7 +54,7 @@ const categoriesModal = document.getElementById('categoriesModal');
 const openCategoriesModal = document.getElementById('openCategoriesModal');
 const closeCategoriesModal = document.getElementById('closeCategoriesModal');
 const categoriesList = document.getElementById('categoriesList');
-const productCategory = document.getElementById('productCategory');
+const productCategoriesContainer = document.getElementById('productCategoriesContainer');
 const newCategoryName = document.getElementById('newCategoryName');
 const addCategoryBtn = document.getElementById('addCategoryBtn');
 
@@ -144,7 +144,21 @@ productForm.addEventListener('submit', async (e) => {
     const id = document.getElementById('productId').value;
     const name = document.getElementById('productName').value;
     const price = document.getElementById('productPrice').value;
-    const category = document.getElementById('productCategory').value;
+    
+    // Read checked categories
+    const checkedBoxes = document.querySelectorAll('input[name="productCategories"]:checked');
+    const category = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (category.length === 0) {
+        alert('يرجى اختيار قسم واحد على الأقل للمنتج.');
+        saveBtn.innerHTML = 'حفظ المنتج';
+        saveBtn.disabled = false;
+        return;
+    }
+
+    const discountInput = document.getElementById('productDiscount');
+    const discount = discountInput && discountInput.value ? Number(discountInput.value) : 0;
+
     let image = document.getElementById('productImage').value || 'https://via.placeholder.com/150';
 
     // Additional fields
@@ -164,6 +178,7 @@ productForm.addEventListener('submit', async (e) => {
         const productData = {
             name,
             price: Number(price),
+            discount: Number(discount) || 0,
             category,
             image,
             description,
@@ -188,6 +203,11 @@ productForm.addEventListener('submit', async (e) => {
         }
         document.getElementById('productModal').classList.remove('active');
         productForm.reset();
+
+        // Reset checkboxes and discounts
+        const checkboxes = document.querySelectorAll('input[name="productCategories"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        if (discountInput) discountInput.value = '';
 
         // Refresh products list view locally without re-fetching from database
         loadProductsPage(currentPage);
@@ -222,7 +242,20 @@ window.editProduct = function (id) {
     document.getElementById('productId').value = id;
     document.getElementById('productName').value = prod.name || '';
     document.getElementById('productPrice').value = prod.price || '';
-    document.getElementById('productCategory').value = prod.category || '';
+    
+    // Set discount input field
+    const discountInput = document.getElementById('productDiscount');
+    if (discountInput) {
+        discountInput.value = prod.discount || '';
+    }
+
+    // Set checked checkboxes for categories
+    const productCats = Array.isArray(prod.category) ? prod.category : (prod.category ? [prod.category] : []);
+    const checkboxes = document.querySelectorAll('input[name="productCategories"]');
+    checkboxes.forEach(cb => {
+        cb.checked = productCats.includes(cb.value);
+    });
+
     document.getElementById('productImage').value = prod.image || '';
 
     // Additional fields
@@ -334,9 +367,9 @@ window.deleteCategory = async function (id) {
 onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) => {
     if (snapshot.empty) {
         const defaults = [
-            { name: 'أدوية', type: 'icon', icon: 'fa-solid fa-pills', image: '' },
-            { name: 'مستحضرات تجميل', type: 'icon', icon: 'fa-solid fa-wand-magic-sparkles', image: '' },
-            { name: 'إكسسوارات طبية', type: 'icon', icon: 'fa-solid fa-heart-pulse', image: '' }
+            { name: 'أدوية', type: 'icon', icon: 'fa-solid fa-pills', image: '', discount: 0 },
+            { name: 'مستحضرات تجميل', type: 'icon', icon: 'fa-solid fa-wand-magic-sparkles', image: '', discount: 0 },
+            { name: 'إكسسوارات طبية', type: 'icon', icon: 'fa-solid fa-heart-pulse', image: '', discount: 0 }
         ];
         for (let cat of defaults) {
             await addDoc(categoriesCol, { ...cat, createdAt: new Date() });
@@ -345,7 +378,9 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
     }
 
     categoriesList.innerHTML = '';
-    productCategory.innerHTML = '';
+    if (productCategoriesContainer) {
+        productCategoriesContainer.innerHTML = '';
+    }
 
     const excelCategorySelect = document.getElementById('excelCategorySelect');
     if (excelCategorySelect) {
@@ -370,6 +405,9 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         } else {
             visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--text-gray);"><i class="fa-solid fa-tags"></i></span>`;
         }
+
+        const discountHtml = cat.discount ? `<span style="color: var(--error-color); font-weight: bold; margin-right: 8px;">(خصم ${cat.discount}%)</span>` : '';
+
         // Modal List
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
@@ -377,16 +415,28 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
             <div style="display: flex; align-items: center;">
                 ${visualHtml}
                 <span style="font-weight: bold;">${cat.name}</span>
+                ${discountHtml}
             </div>
             <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
         `;
         categoriesList.appendChild(li);
 
+        // Populate checkboxes in product modal
+        if (productCategoriesContainer) {
+            const div = document.createElement('div');
+            div.style = "display: flex; align-items: center; gap: 8px; font-family: inherit;";
+            const catDiscountText = cat.discount ? ` <span style="color: var(--error-color); font-size: 13px;">(خصم ${cat.discount}%)</span>` : '';
+            div.innerHTML = `
+                <input type="checkbox" name="productCategories" value="${cat.name}" id="cat_chk_${id}" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;">
+                <label for="cat_chk_${id}" style="margin: 0; cursor: pointer; font-weight: 500; font-size: 15px;">${cat.name}${catDiscountText}</label>
+            `;
+            productCategoriesContainer.appendChild(div);
+        }
+
         // Filter Select Options
         const option = document.createElement('option');
         option.value = cat.name;
         option.textContent = cat.name;
-        productCategory.appendChild(option);
 
         if (excelCategorySelect) {
             excelCategorySelect.appendChild(option.cloneNode(true));
@@ -408,6 +458,8 @@ if (addCategoryBtn) {
             const type = document.getElementById('newCategoryType').value;
             let icon = '';
             let image = '';
+            const discountInput = document.getElementById('newCategoryDiscount');
+            const discount = discountInput && discountInput.value ? Number(discountInput.value) : 0;
             
             try {
                 if (type === 'icon') {
@@ -432,11 +484,13 @@ if (addCategoryBtn) {
                     type: type,
                     icon: icon,
                     image: image,
+                    discount: Number(discount) || 0,
                     createdAt: new Date() 
                 });
                 
                 // Reset fields
                 newCategoryName.value = '';
+                if (discountInput) discountInput.value = '';
                 document.getElementById('categoryImage').value = '';
                 const fileInput = document.getElementById('categoryImageFile');
                 if (fileInput) fileInput.value = '';
@@ -480,7 +534,10 @@ async function loadProductsPage(page = 1) {
         let filteredProducts = cachedProductsList;
 
         if (selectedCategory) {
-            filteredProducts = filteredProducts.filter(p => p.category === selectedCategory);
+            filteredProducts = filteredProducts.filter(p => {
+                const cats = Array.isArray(p.category) ? p.category : [p.category || ''];
+                return cats.includes(selectedCategory);
+            });
         }
 
         if (searchQuery.trim() !== '') {
@@ -530,12 +587,26 @@ function renderProductsList(products) {
         const id = prod.id;
         allProducts[id] = prod; // Store product in local cache for edit modal
 
+        const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
+
+        let priceHtml = `${prod.price} ج.م`;
+        if (prod.discount) {
+            const finalPrice = Math.round(prod.price * (1 - prod.discount / 100) * 100) / 100;
+            priceHtml = `
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: bold; color: var(--primary-dark);">${finalPrice} ج.م</span>
+                    <span style="text-decoration: line-through; color: var(--text-gray); font-size: 12px;">${prod.price} ج.م</span>
+                    <span style="color: var(--error-color); font-size: 11px; font-weight: bold;">(خصم %${prod.discount})</span>
+                </div>
+            `;
+        }
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
             <td><strong>${prod.name}</strong></td>
-            <td>${prod.category}</td>
-            <td>${prod.price} ج.م</td>
+            <td>${categoryText}</td>
+            <td>${priceHtml}</td>
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
                 <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
@@ -809,7 +880,7 @@ if (excelFileInput) {
                     const productData = {
                         name: String(name).trim(),
                         price: price,
-                        category: selectedCategory,
+                        category: [selectedCategory], // Store as array
                         image: 'logo.png', // Default image
                         createdAt: new Date()
                     };

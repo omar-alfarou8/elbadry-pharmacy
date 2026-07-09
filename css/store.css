@@ -325,6 +325,7 @@
     transition: transform 0.3s, box-shadow 0.3s;
     display: flex;
     flex-direction: column;
+    position: relative; /* Support absolute children */
 }
 
 .product-card:hover {
@@ -635,4 +636,45 @@
         font-size: 12px;
         padding: 6px;
     }
+}
+
+/* Discount Badge & Pricing */
+.discount-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--error-color);
+    color: var(--white);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 800;
+    z-index: 5;
+    direction: ltr;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+    animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.product-price .original-price {
+    text-decoration: line-through;
+    font-size: 14px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.product-price .sale-price {
+    color: var(--primary-dark);
 }

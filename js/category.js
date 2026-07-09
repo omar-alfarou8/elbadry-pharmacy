@@ -5,6 +5,35 @@ const productsGrid = document.getElementById('productsGrid');
 const categorySearchInput = document.getElementById('categorySearchInput');
 const categoryPageTitle = document.getElementById('categoryPageTitle');
 
+let categoryDiscounts = {};
+
+function getProductPricing(prod) {
+    const originalPrice = Number(prod.price) || 0;
+    let discountPercent = Number(prod.discount) || 0;
+
+    if (discountPercent === 0) {
+        const cats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
+        let maxCatDiscount = 0;
+        cats.forEach(c => {
+            const catDisc = categoryDiscounts[c] || 0;
+            if (catDisc > maxCatDiscount) {
+                maxCatDiscount = catDisc;
+            }
+        });
+        discountPercent = maxCatDiscount;
+    }
+
+    const hasDiscount = discountPercent > 0;
+    const finalPrice = hasDiscount ? Math.round(originalPrice * (1 - discountPercent / 100) * 100) / 100 : originalPrice;
+
+    return {
+        originalPrice,
+        discountPercent,
+        hasDiscount,
+        finalPrice
+    };
+}
+
 // Read Category Name from URL parameter
 const urlParams = new URLSearchParams(window.location.search);
 const categoryName = urlParams.get('name') ? decodeURIComponent(urlParams.get('name')).trim() : '';
@@ -46,14 +75,23 @@ async function loadProducts() {
             return;
         }
 
+        // Fetch categories to get discounts first
+        const categoriesSnapshot = await getDocs(collection(db, "categories"));
+        categoryDiscounts = {};
+        categoriesSnapshot.forEach(docSnap => {
+            const cat = docSnap.data();
+            categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+        });
+
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
 
         allProducts = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
+            const cats = Array.isArray(data.category) ? data.category : [data.category || ''];
             // Match category name
-            if (data.category && (data.category.includes(categoryName) || categoryName.includes(data.category))) {
+            if (cats.some(c => c.includes(categoryName) || categoryName.includes(c))) {
                 allProducts.push({ id: doc.id, ...data });
             }
         });
@@ -109,20 +147,30 @@ function loadMoreProducts() {
     }
 
     nextProducts.forEach(prod => {
+        const pricing = getProductPricing(prod);
+        const badgeHtml = pricing.hasDiscount ? `<div class="discount-badge">-${pricing.discountPercent}%</div>` : '';
+        const priceHtml = pricing.hasDiscount 
+            ? `<span class="sale-price">${pricing.finalPrice} ج.م</span> <span class="original-price">${pricing.originalPrice} ج.م</span>`
+            : `${pricing.originalPrice} ج.م`;
+
+        const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
+
         const div = document.createElement('div');
         div.className = 'product-card';
         div.style.animation = 'fadeIn 0.5s ease forwards';
+        div.style.position = 'relative';
         div.innerHTML = `
+            ${badgeHtml}
             <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
                 <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
             </a>
             <div class="product-info">
-                <div class="product-category">${prod.category}</div>
+                <div class="product-category">${categoryText}</div>
                 <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
                     <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
                 </a>
-                <div class="product-price">${prod.price} ج.م</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${prod.price}" data-img="${prod.image}">
+                <div class="product-price">${priceHtml}</div>
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-img="${prod.image}">
                 </div>
             </div>
         `;
