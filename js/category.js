@@ -170,7 +170,7 @@ function loadMoreProducts() {
                     <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
                 </a>
                 <div class="product-price">${priceHtml}</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-img="${prod.image}">
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${prod.image}">
                 </div>
             </div>
         `;
@@ -200,8 +200,15 @@ function loadMoreProducts() {
     }
 }
 
-window.addFromGrid = function (id, name, price, img) {
-    addToCart({ id, name, price, image: img });
+window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null) {
+    addToCart({ 
+        id, 
+        name, 
+        price, 
+        image: img,
+        originalPrice: originalPrice !== null ? Number(originalPrice) : price,
+        discountPercent: discountPercent !== null ? Number(discountPercent) : 0
+    });
 };
 
 function updateGridActionsUI() {
@@ -222,8 +229,10 @@ function updateGridActionsUI() {
             const name = container.dataset.name.replace(/'/g, "\\'");
             const img = container.dataset.img;
             const price = container.dataset.price;
+            const originalPrice = container.dataset.originalPrice || price;
+            const discountPercent = container.dataset.discountPercent || 0;
             container.innerHTML = `
-                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}')">
+                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent})">
                     <i class="fa-solid fa-cart-plus"></i> أضف للعربة
                 </button>
             `;
@@ -257,7 +266,15 @@ function addToCart(product) {
     if (existing) {
         existing.quantity += 1;
     } else {
-        cart.push({ ...product, quantity: 1 });
+        cart.push({ 
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            originalPrice: product.originalPrice !== undefined ? product.originalPrice : product.price,
+            discountPercent: product.discountPercent !== undefined ? product.discountPercent : 0,
+            image: product.image,
+            quantity: 1 
+        });
     }
     saveCart();
     updateCartUI();
@@ -309,12 +326,21 @@ function updateCartUI() {
     let html = '';
     cart.forEach(item => {
         totalPrice += item.price * item.quantity;
+        const hasDiscount = Number(item.discountPercent) > 0;
+        const priceHtml = hasDiscount 
+            ? `<div class="cart-item-price" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                 <span>${item.price} ج.م</span>
+                 <span style="text-decoration: line-through; color: var(--text-gray); font-size: 13px; font-weight: 500;">${item.originalPrice} ج.م</span>
+                 <span style="background: var(--error-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 800;">خصم ${item.discountPercent}%</span>
+               </div>`
+            : `<div class="cart-item-price">${item.price} ج.م</div>`;
+
         html += `
             <div class="cart-item">
                 <img src="${item.image}" alt="" class="cart-item-img">
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.name}</div>
-                    <div class="cart-item-price">${item.price} ج.م</div>
+                    ${priceHtml}
                     <div class="qty-controls">
                         <button class="qty-btn" onclick="updateQty('${item.id}', 1)"><i class="fa-solid fa-plus" style="font-size:10px;"></i></button>
                         <span style="font-weight: bold; width: 20px; text-align: center;">${item.quantity}</span>

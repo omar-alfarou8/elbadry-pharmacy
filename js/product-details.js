@@ -1,3 +1,5 @@
+import { db } from './firebase-config.js';
+import { collection, query, getDocs, getDoc, addDoc, onSnapshot, doc, limit } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const relatedProductsSection = document.getElementById('relatedProductsSection');
 const productsGrid = document.getElementById('productsGrid');
@@ -5,6 +7,35 @@ const productsGrid = document.getElementById('productsGrid');
 // Extract Product ID from URL
 const urlParams = new URLSearchParams(window.location.search);
 const productId = urlParams.get('id');
+
+let categoryDiscounts = {};
+
+function getProductPricing(prod) {
+    const originalPrice = Number(prod.price) || 0;
+    let discountPercent = Number(prod.discount) || 0;
+
+    if (discountPercent === 0) {
+        const cats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
+        let maxCatDiscount = 0;
+        cats.forEach(c => {
+            const catDisc = categoryDiscounts[c] || 0;
+            if (catDisc > maxCatDiscount) {
+                maxCatDiscount = catDisc;
+            }
+        });
+        discountPercent = maxCatDiscount;
+    }
+
+    const hasDiscount = discountPercent > 0;
+    const finalPrice = hasDiscount ? Math.round(originalPrice * (1 - discountPercent / 100) * 100) / 100 : originalPrice;
+
+    return {
+        originalPrice,
+        discountPercent,
+        hasDiscount,
+        finalPrice
+    };
+}
 
 // Cart State
 let cart = JSON.parse(localStorage.getItem('elbadry_cart')) || [];
@@ -242,7 +273,7 @@ async function loadRelatedProducts(category, currentId) {
                             <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
                         </a>
                         <div class="product-price">${priceHtml}</div>
-                        <div id="product-action-${id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-img="${prod.image}">
+                        <div id="product-action-${id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${prod.image}">
                         </div>
                     </div>
                 `;
@@ -273,6 +304,8 @@ function addToCartWithQty(product, qty) {
             id: product.id,
             name: product.name,
             price: pricing.finalPrice,
+            originalPrice: pricing.originalPrice,
+            discountPercent: pricing.discountPercent,
             image: product.image,
             quantity: qty
         });
@@ -284,12 +317,20 @@ function addToCartWithQty(product, qty) {
     cartModal.classList.add('active');
 }
 
-window.addFromGrid = function (id, name, price, img) {
+window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null) {
     const existing = cart.find(item => item.id === id);
     if (existing) {
         existing.quantity += 1;
     } else {
-        cart.push({ id, name, price, image: img, quantity: 1 });
+        cart.push({
+            id,
+            name,
+            price,
+            originalPrice: originalPrice !== null ? Number(originalPrice) : price,
+            discountPercent: discountPercent !== null ? Number(discountPercent) : 0,
+            image: img,
+            quantity: 1
+        });
     }
     saveCart();
     updateCartUI();
@@ -335,8 +376,10 @@ function updateGridActionsUI() {
             const name = container.dataset.name.replace(/'/g, "\\'");
             const img = container.dataset.img;
             const price = container.dataset.price;
+            const originalPrice = container.dataset.originalPrice || price;
+            const discountPercent = container.dataset.discountPercent || 0;
             container.innerHTML = `
-                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}')">
+                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent})">
                     <i class="fa-solid fa-cart-plus"></i> أضف للعربة
                 </button>
             `;
@@ -368,12 +411,21 @@ function updateCartUI() {
     let html = '';
     cart.forEach(item => {
         totalPrice += item.price * item.quantity;
+        const hasDiscount = Number(item.discountPercent) > 0;
+        const priceHtml = hasDiscount 
+            ? `<div class="cart-item-price" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                 <span>${item.price} ج.م</span>
+                 <span style="text-decoration: line-through; color: var(--text-gray); font-size: 13px; font-weight: 500;">${item.originalPrice} ج.م</span>
+                 <span style="background: var(--error-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 800;">خصم ${item.discountPercent}%</span>
+               </div>`
+            : `<div class="cart-item-price">${item.price} ج.م</div>`;
+
         html += `
             <div class="cart-item">
                 <img src="${item.image}" alt="" class="cart-item-img">
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.name}</div>
-                    <div class="cart-item-price">${item.price} ج.م</div>
+                    ${priceHtml}
                     <div class="qty-controls">
                         <button class="qty-btn" onclick="updateQty('${item.id}', 1)"><i class="fa-solid fa-plus" style="font-size:10px;"></i></button>
                         <span style="font-weight: bold; width: 20px; text-align: center;">${item.quantity}</span>
