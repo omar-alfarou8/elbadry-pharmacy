@@ -104,7 +104,7 @@ function renderProductDetails(prod) {
     const pricing = getProductPricing(prod);
     const originalPriceHtml = pricing.hasDiscount ? `${pricing.finalPrice} ج.م` : `${pricing.originalPrice} ج.م`;
 
-    const priceBadgeHtml = pricing.hasDiscount 
+    const priceBadgeHtml = pricing.hasDiscount
         ? `<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
              <div class="details-price-badge" style="margin-bottom:0;">${pricing.finalPrice} ج.م</div>
              <div style="text-decoration: line-through; color: var(--text-gray); font-size: 18px; font-weight: 500;">${pricing.originalPrice} ج.م</div>
@@ -164,13 +164,13 @@ function renderProductDetails(prod) {
                     
                     <div class="tab-contents" style="min-height: 150px;">
                         <div class="tab-pane active" id="tab-description">
-                            ${prod.description ? `<p>${prod.description}</p>` : `<p style="color: var(--text-gray); font-style: italic;">لا يوجد وصف متوفر لهذا المنتج حالياً.</p>`}
+                            ${prod.description ? `<p>${prod.description}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-usage">
-                            ${prod.usage ? `<p>${prod.usage}</p>` : `<p style="color: var(--text-gray); font-style: italic;">يرجى مراجعة الطبيب المختص أو الصيدلي لمعرفة طريقة الاستخدام المناسبة.</p>`}
+                            ${prod.usage ? `<p>${prod.usage}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-ingredients">
-                            ${prod.activeIngredients ? `<p>${prod.activeIngredients}</p>` : `<p style="color: var(--text-gray); font-style: italic;">لا توجد معلومات إضافية مسجلة عن تركيب المواد الفعالة.</p>`}
+                            ${prod.activeIngredients ? `<p>${prod.activeIngredients}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-warnings">
                             ${prod.warnings ? `
@@ -181,7 +181,7 @@ function renderProductDetails(prod) {
                             ` : `
                                 <p style="display: flex; align-items: flex-start; gap: 8px; color: var(--text-gray); font-style: italic;">
                                     <i class="fa-solid fa-circle-info" style="color: var(--primary-color); margin-top: 5px; font-size: 18px; flex-shrink:0;"></i>
-                                    <span>لا توجد تحذيرات مسجلة لهذا الدواء. احرص دائماً على قراءة النشرة الداخلية المرفقة بعناية قبل الاستعمال.</span>
+                                    <span></span>
                                 </p>
                             `}
                         </div>
@@ -252,7 +252,7 @@ async function loadRelatedProducts(category, currentId) {
             if (id !== currentId && isRelated && count < 4) {
                 const pricing = getProductPricing({ id, ...prod });
                 const badgeHtml = pricing.hasDiscount ? `<div class="discount-badge">-${pricing.discountPercent}%</div>` : '';
-                const priceHtml = pricing.hasDiscount 
+                const priceHtml = pricing.hasDiscount
                     ? `<span class="sale-price">${pricing.finalPrice} ج.م</span> <span class="original-price">${pricing.originalPrice} ج.م</span>`
                     : `${pricing.originalPrice} ج.م`;
 
@@ -412,7 +412,7 @@ function updateCartUI() {
     cart.forEach(item => {
         totalPrice += item.price * item.quantity;
         const hasDiscount = Number(item.discountPercent) > 0;
-        const priceHtml = hasDiscount 
+        const priceHtml = hasDiscount
             ? `<div class="cart-item-price" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                  <span>${item.price} ج.م</span>
                  <span style="text-decoration: line-through; color: var(--text-gray); font-size: 13px; font-weight: 500;">${item.originalPrice} ج.م</span>
