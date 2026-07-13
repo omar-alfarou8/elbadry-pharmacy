@@ -40,11 +40,22 @@ function getProductPricing(prod) {
 // Cart State
 let cart = JSON.parse(localStorage.getItem('elbadry_cart')) || [];
 let deliveryFees = {};
+try {
+    const cachedDelivery = localStorage.getItem('elbadry_delivery_cache');
+    if (cachedDelivery) {
+        deliveryFees = JSON.parse(cachedDelivery);
+    }
+} catch (e) {
+    console.error("Error reading delivery cache:", e);
+}
 
 // Load delivery fees dynamically from Firebase
 onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
     if (docSnap.exists()) {
         deliveryFees = docSnap.data().fees || {};
+        try {
+            localStorage.setItem('elbadry_delivery_cache', JSON.stringify(deliveryFees));
+        } catch (e) {}
         updateCartDeliveryUI();
     }
 });
@@ -53,37 +64,76 @@ onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
 let currentProduct = null;
 let selectedQty = 1;
 
-// Load Product Details
+// Load Product Details with SWR caching & parallel query execution
 async function loadProductDetails() {
     if (!productId) {
         showErrorPage('معرف المنتج غير موجود!');
         return;
     }
 
+    // 1. Try to load categories and the target product from localStorage cache first
     try {
-        // Fetch categories to get discounts
-        const categoriesSnapshot = await getDocs(collection(db, "categories"));
+        const storedCats = localStorage.getItem('elbadry_categories_cache');
+        if (storedCats) {
+            categoryDiscounts = {};
+            JSON.parse(storedCats).forEach(cat => {
+                categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            });
+        }
+        
+        const storedProds = localStorage.getItem('elbadry_products_cache');
+        if (storedProds) {
+            const cachedProds = JSON.parse(storedProds);
+            const cachedProductFound = cachedProds.find(p => p.id === productId);
+            if (cachedProductFound) {
+                currentProduct = cachedProductFound;
+                renderProductDetails(currentProduct);
+                loadRelatedProducts(currentProduct.category, currentProduct.id);
+            }
+        }
+    } catch (e) {
+        console.error("Error reading cache on details page:", e);
+    }
+
+    try {
+        // 2. Fetch categories and product details in parallel to eliminate waterfall latency
+        const [categoriesSnapshot, docSnap] = await Promise.all([
+            getDocs(collection(db, "categories")),
+            getDoc(doc(db, "products", productId))
+        ]);
+
         categoryDiscounts = {};
+        const freshCats = [];
         categoriesSnapshot.forEach(docSnap => {
             const cat = docSnap.data();
             categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            freshCats.push(cat);
         });
-
-        const docRef = doc(db, "products", productId);
-        const docSnap = await getDoc(docRef);
+        try {
+            localStorage.setItem('elbadry_categories_cache', JSON.stringify(freshCats));
+        } catch (e) {}
 
         if (!docSnap.exists()) {
-            showErrorPage('عذراً، لم نتمكن من العثور على هذا المنتج. قد يكون تم حذفه أو نقله.');
+            if (!currentProduct) {
+                showErrorPage('عذراً، لم نتمكن من العثور على هذا المنتج. قد يكون تم حذفه أو نقله.');
+            }
             return;
         }
 
-        currentProduct = { id: docSnap.id, ...docSnap.data() };
-        renderProductDetails(currentProduct);
-        loadRelatedProducts(currentProduct.category, currentProduct.id);
+        const freshProduct = { id: docSnap.id, ...docSnap.data() };
+        
+        // 3. Update UI if data changed or cache was empty
+        if (JSON.stringify(freshProduct) !== JSON.stringify(currentProduct)) {
+            currentProduct = freshProduct;
+            renderProductDetails(currentProduct);
+            loadRelatedProducts(currentProduct.category, currentProduct.id);
+        }
 
     } catch (error) {
         console.error("Error loading product details: ", error);
-        showErrorPage('حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى المحاولة لاحقاً.');
+        if (!currentProduct) {
+            showErrorPage('حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى المحاولة لاحقاً.');
+        }
     }
 }
 
@@ -232,26 +282,20 @@ function renderProductDetails(prod) {
     });
 }
 
-// Load Related Products
+// Load Related Products using local cache first, then Firestore limit(50) query
 async function loadRelatedProducts(category, currentId) {
-    try {
-        const currentCats = Array.isArray(category) ? category : [category || ''];
+    const currentCats = Array.isArray(category) ? category : [category || ''];
 
-        const q = query(collection(db, "products"), limit(50));
-        const querySnapshot = await getDocs(q);
-
+    const renderRelated = (prodsList) => {
         let count = 0;
         productsGrid.innerHTML = '';
 
-        querySnapshot.forEach((docSnap) => {
-            const prod = docSnap.data();
-            const id = docSnap.id;
-
+        prodsList.forEach((prod) => {
             const prodCats = Array.isArray(prod.category) ? prod.category : [prod.category || ''];
             const isRelated = prodCats.some(c => currentCats.includes(c));
 
-            if (id !== currentId && isRelated && count < 4) {
-                const pricing = getProductPricing({ id, ...prod });
+            if (prod.id !== currentId && isRelated && count < 4) {
+                const pricing = getProductPricing(prod);
                 const badgeHtml = pricing.hasDiscount ? `<div class="discount-badge">-${pricing.discountPercent}%</div>` : '';
                 const priceHtml = pricing.hasDiscount
                     ? `<span class="sale-price">${pricing.finalPrice} ج.م</span> <span class="original-price">${pricing.originalPrice} ج.م</span>`
@@ -266,16 +310,16 @@ async function loadRelatedProducts(category, currentId) {
                 const relatedImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
                 div.innerHTML = `
                     ${badgeHtml}
-                    <a href="product.html?id=${id}" style="display: block; overflow: hidden;">
+                    <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
                         <img src="${relatedImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
                     </a>
                     <div class="product-info">
                         <div class="product-category">${escapeHTML(categoryText)}</div>
-                        <a href="product.html?id=${id}" style="color: inherit; text-decoration: none;">
+                        <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
                             <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                         </a>
                         <div class="product-price">${priceHtml}</div>
-                        <div id="product-action-${id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}">
+                        <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}">
                         </div>
                     </div>
                 `;
@@ -287,6 +331,34 @@ async function loadRelatedProducts(category, currentId) {
         if (count > 0) {
             relatedProductsSection.style.display = 'block';
             updateGridActionsUI();
+        }
+    };
+
+    // 1. Try rendering related products instantly using cached products in localStorage
+    let cachedProds = [];
+    try {
+        const storedProds = localStorage.getItem('elbadry_products_cache');
+        if (storedProds) {
+            cachedProds = JSON.parse(storedProds);
+        }
+    } catch (e) {}
+
+    if (cachedProds.length > 0) {
+        renderRelated(cachedProds);
+    }
+
+    try {
+        // 2. Fetch fresh products from Firestore in the background to update
+        const q = query(collection(db, "products"), limit(50));
+        const querySnapshot = await getDocs(q);
+        const freshProds = [];
+        querySnapshot.forEach((docSnap) => {
+            freshProds.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // Re-render only if the fresh list differs or if there was no cache
+        if (JSON.stringify(cachedProds.slice(0, 50)) !== JSON.stringify(freshProds)) {
+            renderRelated(freshProds);
         }
 
     } catch (e) {

@@ -35,9 +35,21 @@ function getProductPricing(prod) {
 
 // Delivery fees state
 let deliveryFees = {};
+try {
+    const cachedDelivery = localStorage.getItem('elbadry_delivery_cache');
+    if (cachedDelivery) {
+        deliveryFees = JSON.parse(cachedDelivery);
+    }
+} catch (e) {
+    console.error("Error reading delivery cache:", e);
+}
+
 onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
     if (docSnap.exists()) {
         deliveryFees = docSnap.data().fees || {};
+        try {
+            localStorage.setItem('elbadry_delivery_cache', JSON.stringify(deliveryFees));
+        } catch (e) {}
         updateCartDeliveryUI();
     }
 });
@@ -49,45 +61,58 @@ let filteredProducts = [];
 let displayedCount = 0;
 const PAGE_SIZE = 12;
 
-// Load products
+// Load products with Stale-While-Revalidate caching pattern
 async function loadProducts() {
+    // 1. Try to load products instantly from localStorage cache
     try {
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل المنتجات...</p></div>`;
-        
-        // Try loading from sessionStorage first (cache for 10 minutes) to save Firestore reads
-        const cachedData = sessionStorage.getItem('elbadry_products_cache');
-        const cachedTime = sessionStorage.getItem('elbadry_products_cache_time');
-        const now = Date.now();
-        
-        if (cachedData && cachedTime && (now - Number(cachedTime) < 10 * 60 * 1000)) { // 10 minutes cache
+        const cachedData = localStorage.getItem('elbadry_products_cache');
+        if (cachedData) {
             allProducts = JSON.parse(cachedData);
             applyFilters();
-            return;
         }
+    } catch (e) {
+        console.error("Error loading products from localStorage cache:", e);
+    }
 
+    // Show loading spinner if cache was empty
+    if (allProducts.length === 0) {
+        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل المنتجات...</p></div>`;
+    }
+
+    try {
+        // 2. Fetch fresh products from Firestore in the background
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
 
-        allProducts = [];
+        const freshProducts = [];
         querySnapshot.forEach((doc) => {
-            allProducts.push({ id: doc.id, ...doc.data() });
+            freshProducts.push({ id: doc.id, ...doc.data() });
         });
 
-        // Save to sessionStorage
-        sessionStorage.setItem('elbadry_products_cache', JSON.stringify(allProducts));
-        sessionStorage.setItem('elbadry_products_cache_time', String(now));
+        // Save fresh products to localStorage cache
+        try {
+            localStorage.setItem('elbadry_products_cache', JSON.stringify(freshProducts));
+        } catch (e) {}
 
-        applyFilters();
+        // 3. Update the list and refresh the UI
+        // If data is different, or if we had no cache, apply filters to re-render
+        if (JSON.stringify(allProducts) !== JSON.stringify(freshProducts) || allProducts.length === 0) {
+            allProducts = freshProducts;
+            applyFilters();
+        }
 
     } catch (e) {
-        console.error("Error loading products: ", e);
-        productsGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
-                <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
-                <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
-                <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى إعادة تحميل الصفحة أو المحاولة لاحقاً.</div>
-            </div>
-        `;
+        console.error("Error loading fresh products from Firestore: ", e);
+        // Only show error message if we couldn't load from cache either
+        if (allProducts.length === 0) {
+            productsGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
+                    <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم. يرجى إعادة تحميل الصفحة أو المحاولة لاحقاً.</div>
+                </div>
+            `;
+        }
     }
 }
 
@@ -235,58 +260,87 @@ function updateGridActionsUI() {
     });
 }
 
-// Filtering dynamically from Firebase Categories using Premium Category Cards
+// Filtering dynamically from Firebase Categories using Premium Category Cards (SWR cached)
 const categoriesGrid = document.getElementById('categoriesGrid');
 
 if (categoriesGrid) {
-    onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
-        categoriesGrid.innerHTML = '';
-        categoryDiscounts = {}; // Clear and re-populate
+    // 1. Try to load categories instantly from localStorage cache
+    try {
+        const storedCats = localStorage.getItem('elbadry_categories_cache');
+        if (storedCats) {
+            const cachedCategories = JSON.parse(storedCats);
+            cachedCategories.forEach(cat => {
+                categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            });
+            renderCategoriesUI(cachedCategories);
+        }
+    } catch (e) {
+        console.error("Error reading categories from cache:", e);
+    }
 
-        // Add the "All" (الكل) category card first as a real link pointing to store.html (always active on store.html)
-        const allCard = document.createElement('a');
-        allCard.className = 'category-card active';
-        allCard.href = 'store.html';
-        allCard.innerHTML = `
-            <div class="category-icon-wrapper">
-                <i class="fa-solid fa-border-all"></i>
-            </div>
-            <div class="category-name">الكل</div>
-        `;
-        categoriesGrid.appendChild(allCard);
+    // 2. Fetch fresh categories from Firestore
+    onSnapshot(query(collection(db, 'categories'), orderBy('createdAt', 'asc')), (snapshot) => {
+        const freshCategories = [];
+        categoryDiscounts = {}; // Clear and re-populate
 
         snapshot.forEach(docSnap => {
             const cat = docSnap.data();
             categoryDiscounts[cat.name] = Number(cat.discount) || 0;
-
-            const card = document.createElement('a');
-            card.className = 'category-card';
-            card.href = `category.html?name=${encodeURIComponent(cat.name)}`;
-
-            let visualHtml = '';
-            if (cat.type === 'icon') {
-                visualHtml = `<i class="${cat.icon || 'fa-solid fa-tags'}"></i>`;
-            } else if (cat.type === 'image') {
-                visualHtml = `<img src="${cat.image || 'https://via.placeholder.com/150'}" alt="${cat.name}" class="category-img" loading="lazy">`;
-            } else {
-                visualHtml = `<i class="fa-solid fa-tags"></i>`;
-            }
-
-            const discountBadgeText = cat.discount ? ` <span style="font-size:11px; color:var(--error-color); font-weight:bold;">(خصم ${cat.discount}%)</span>` : '';
-
-            card.innerHTML = `
-                <div class="category-icon-wrapper">
-                    ${visualHtml}
-                </div>
-                <div class="category-name">${cat.name}${discountBadgeText}</div>
-            `;
-            categoriesGrid.appendChild(card);
+            freshCategories.push(cat);
         });
 
-        // Trigger filter refresh if products cache is already present
+        try {
+            localStorage.setItem('elbadry_categories_cache', JSON.stringify(freshCategories));
+        } catch (e) {}
+
+        renderCategoriesUI(freshCategories);
+
+        // Trigger filter refresh if products are already present
         if (allProducts.length > 0) {
             applyFilters();
         }
+    });
+}
+
+function renderCategoriesUI(categories) {
+    if (!categoriesGrid) return;
+    categoriesGrid.innerHTML = '';
+
+    // Add the "All" (الكل) category card first as a real link pointing to store.html (always active on store.html)
+    const allCard = document.createElement('a');
+    allCard.className = 'category-card active';
+    allCard.href = 'store.html';
+    allCard.innerHTML = `
+        <div class="category-icon-wrapper">
+            <i class="fa-solid fa-border-all"></i>
+        </div>
+        <div class="category-name">الكل</div>
+    `;
+    categoriesGrid.appendChild(allCard);
+
+    categories.forEach(cat => {
+        const card = document.createElement('a');
+        card.className = 'category-card';
+        card.href = `category.html?name=${encodeURIComponent(cat.name)}`;
+
+        let visualHtml = '';
+        if (cat.type === 'icon') {
+            visualHtml = `<i class="${cat.icon || 'fa-solid fa-tags'}"></i>`;
+        } else if (cat.type === 'image') {
+            visualHtml = `<img src="${cat.image || 'https://via.placeholder.com/150'}" alt="${cat.name}" class="category-img" loading="lazy">`;
+        } else {
+            visualHtml = `<i class="fa-solid fa-tags"></i>`;
+        }
+
+        const discountBadgeText = cat.discount ? ` <span style="font-size:11px; color:var(--error-color); font-weight:bold;">(خصم ${cat.discount}%)</span>` : '';
+
+        card.innerHTML = `
+            <div class="category-icon-wrapper">
+                ${visualHtml}
+            </div>
+            <div class="category-name">${cat.name}${discountBadgeText}</div>
+        `;
+        categoriesGrid.appendChild(card);
     });
 }
 
@@ -650,7 +704,7 @@ function setupSlider(slides) {
         
         slideItem.innerHTML = `
             <a href="${linkHref}" ${targetAttr} class="slide-link" style="display:block; width:100%; height:100%;">
-                <img src="${slide.image}" alt="${slide.title || 'Ad'}" class="slide-img" loading="lazy">
+                <img src="${slide.image}" alt="${slide.title || 'Ad'}" class="slide-img" ${idx === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}>
                 ${(slide.title || slide.description) ? `
                     <div class="slide-overlay-content">
                         ${slide.title ? `<h2 class="slide-title">${slide.title}</h2>` : ''}
@@ -735,11 +789,24 @@ if (sliderNextBtn) {
     });
 }
 
+// Load cached slides first for instant render
+try {
+    const storedSlides = localStorage.getItem('elbadry_slides_cache');
+    if (storedSlides) {
+        setupSlider(JSON.parse(storedSlides));
+    }
+} catch (e) {
+    console.error("Error reading slides cache:", e);
+}
+
 // Fetch ads slides from Firestore
 onSnapshot(query(collection(db, 'slides'), orderBy('createdAt', 'desc')), (snapshot) => {
     const slides = [];
     snapshot.forEach(docSnap => {
         slides.push(docSnap.data());
     });
+    try {
+        localStorage.setItem('elbadry_slides_cache', JSON.stringify(slides));
+    } catch (e) {}
     setupSlider(slides);
 });

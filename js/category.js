@@ -51,9 +51,21 @@ if (categoryName) {
 
 // Delivery fees state
 let deliveryFees = {};
+try {
+    const cachedDelivery = localStorage.getItem('elbadry_delivery_cache');
+    if (cachedDelivery) {
+        deliveryFees = JSON.parse(cachedDelivery);
+    }
+} catch (e) {
+    console.error("Error reading delivery cache:", e);
+}
+
 onSnapshot(doc(db, 'settings', 'delivery'), (docSnap) => {
     if (docSnap.exists()) {
         deliveryFees = docSnap.data().fees || {};
+        try {
+            localStorage.setItem('elbadry_delivery_cache', JSON.stringify(deliveryFees));
+        } catch (e) {}
         updateCartDeliveryUI();
     }
 });
@@ -65,48 +77,96 @@ let filteredProducts = [];
 let displayedCount = 0;
 const PAGE_SIZE = 12;
 
-// Load products for this category
+// Load products for this category using SWR caching & parallel fetches
 async function loadProducts() {
+    // 1. Try to load categories and products from localStorage cache instantly
     try {
-        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل منتجات القسم...</p></div>`;
-        
-        if (!categoryName) {
-            productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">عذراً، لم يتم تحديد اسم القسم بشكل صحيح.</p>`;
-            return;
+        const storedCats = localStorage.getItem('elbadry_categories_cache');
+        const storedProds = localStorage.getItem('elbadry_products_cache');
+        if (storedCats) {
+            const cachedCats = JSON.parse(storedCats);
+            categoryDiscounts = {};
+            cachedCats.forEach(cat => {
+                categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            });
         }
+        if (storedProds) {
+            const cachedProds = JSON.parse(storedProds);
+            allProducts = [];
+            cachedProds.forEach(p => {
+                const cats = Array.isArray(p.category) ? p.category : [p.category || ''];
+                if (cats.some(c => c.includes(categoryName) || categoryName.includes(c))) {
+                    allProducts.push(p);
+                }
+            });
+            applyFilters();
+        }
+    } catch (e) {
+        console.error("Error reading cache in category page:", e);
+    }
 
-        // Fetch categories to get discounts first
-        const categoriesSnapshot = await getDocs(collection(db, "categories"));
+    if (allProducts.length === 0) {
+        productsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--primary-color);"></i><p style="margin-top: 15px;">جاري تحميل منتجات القسم...</p></div>`;
+    }
+
+    if (!categoryName) {
+        productsGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-gray);">عذراً، لم يتم تحديد اسم القسم بشكل صحيح.</p>`;
+        return;
+    }
+
+    try {
+        // 2. Fetch categories and products in parallel to eliminate waterfall latency
+        const [categoriesSnapshot, querySnapshot] = await Promise.all([
+            getDocs(collection(db, "categories")),
+            getDocs(query(collection(db, "products"), orderBy("createdAt", "desc")))
+        ]);
+
+        // Process fresh categories
         categoryDiscounts = {};
+        const freshCats = [];
         categoriesSnapshot.forEach(docSnap => {
             const cat = docSnap.data();
             categoryDiscounts[cat.name] = Number(cat.discount) || 0;
+            freshCats.push(cat);
         });
+        try {
+            localStorage.setItem('elbadry_categories_cache', JSON.stringify(freshCats));
+        } catch (e) {}
 
-        const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-        const querySnapshot = await getDocs(q);
-
-        allProducts = [];
+        // Process fresh products
+        const freshProds = [];
+        const filteredFreshProds = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data();
+            const prodItem = { id: doc.id, ...data };
+            freshProds.push(prodItem);
+            
             const cats = Array.isArray(data.category) ? data.category : [data.category || ''];
-            // Match category name
             if (cats.some(c => c.includes(categoryName) || categoryName.includes(c))) {
-                allProducts.push({ id: doc.id, ...data });
+                filteredFreshProds.push(prodItem);
             }
         });
+        try {
+            localStorage.setItem('elbadry_products_cache', JSON.stringify(freshProds));
+        } catch (e) {}
 
-        applyFilters();
+        // 3. Update UI if data changed or cache was empty
+        if (JSON.stringify(allProducts) !== JSON.stringify(filteredFreshProds) || allProducts.length === 0) {
+            allProducts = filteredFreshProds;
+            applyFilters();
+        }
 
     } catch (e) {
         console.error("Error loading products: ", e);
-        productsGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
-                <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
-                <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
-                <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم.</div>
-            </div>
-        `;
+        if (allProducts.length === 0) {
+            productsGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; color: var(--error-color); padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px;">
+                    <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--error-color);"></i>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--text-dark);">عذراً، لم نتمكن من تحميل المنتجات</div>
+                    <div style="font-size: 14px; color: var(--text-gray); max-width: 400px; line-height: 1.6;">حدث خطأ غير متوقع أثناء الاتصال بالخادم.</div>
+                </div>
+            `;
+        }
     }
 }
 
