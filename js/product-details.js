@@ -165,6 +165,55 @@ function renderProductDetails(prod) {
     const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
 
     const detailsImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
+    const isOutOfStock = prod.stock !== undefined && prod.stock !== null && prod.stock !== '' && Number(prod.stock) <= 0;
+
+    let stockStatusHtml = '';
+    if (prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
+        const stockNum = Number(prod.stock);
+        if (stockNum <= 0) {
+            stockStatusHtml = `<div style="color: var(--error-color); font-weight: bold; font-size: 14px; text-align: center; background: rgba(229, 62, 62, 0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(229, 62, 62, 0.1);"><i class="fa-solid fa-circle-xmark"></i> غير متوفر في المخزن حالياً</div>`;
+        } else if (stockNum <= 5) {
+            stockStatusHtml = `<div style="color: #dd6b20; font-weight: bold; font-size: 14px; text-align: center; background: rgba(221, 107, 32, 0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(221, 107, 32, 0.1);"><i class="fa-solid fa-triangle-exclamation"></i> متبقي ${stockNum} قطع فقط في المخزن!</div>`;
+        } else {
+            stockStatusHtml = `<div style="color: var(--success-color); font-weight: bold; font-size: 14px; text-align: center; background: rgba(56, 161, 105, 0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(56, 161, 105, 0.1);"><i class="fa-solid fa-circle-check"></i> متوفر في المخزن (${stockNum} قطعة)</div>`;
+        }
+    }
+    
+    let limitStatusHtml = '';
+    if (prod.maxLimit !== undefined && prod.maxLimit !== null && prod.maxLimit !== '') {
+        const limitNum = Number(prod.maxLimit);
+        limitStatusHtml = `<div style="color: #4a5568; background: #edf2f7; padding: 8px; border-radius: 8px; font-weight: bold; font-size: 13px; text-align: center; border: 1px solid #e2e8f0;"><i class="fa-solid fa-circle-info"></i> الحد الأقصى للطلب هو ${limitNum} قطع</div>`;
+    }
+
+    let qtyBlockHtml = '';
+    if (!isOutOfStock) {
+        qtyBlockHtml = `
+                    <div class="details-qty-block" style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 12px; background: rgba(0,0,0,0.01); margin-top: 5px;">
+                        <span style="font-weight: 800; color: var(--text-gray); font-size: 15px;">الكمية:</span>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <button class="qty-btn" id="detailsQtyPlus" style="width: 32px; height: 32px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; cursor: pointer; color: var(--primary-color); font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fa-solid fa-plus"></i></button>
+                            <span id="detailsQtyVal" style="font-weight: 800; font-size: 18px; width: 25px; text-align: center; color: var(--text-dark);">1</span>
+                            <button class="qty-btn" id="detailsQtyMinus" style="width: 32px; height: 32px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; cursor: pointer; color: var(--primary-color); font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fa-solid fa-minus"></i></button>
+                        </div>
+                    </div>
+        `;
+    }
+
+    let addToCartBtnHtml = '';
+    if (isOutOfStock) {
+        addToCartBtnHtml = `
+                    <button class="btn-primary" id="detailsAddToCartBtn" style="padding: 15px; font-size: 16px; border-radius: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; background-color: #a0aec0; cursor: not-allowed;" disabled>
+                        <i class="fa-solid fa-ban"></i> نفذت الكمية
+                    </button>
+        `;
+    } else {
+        addToCartBtnHtml = `
+                    <button class="btn-primary" id="detailsAddToCartBtn" style="padding: 15px; font-size: 16px; border-radius: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px;">
+                        <i class="fa-solid fa-cart-plus"></i> أضف لعربة التسوق
+                    </button>
+        `;
+    }
+
     productDetailsContent.innerHTML = `
         <div class="details-grid">
             <!-- Right Column: Image and Action Card -->
@@ -174,6 +223,8 @@ function renderProductDetails(prod) {
                 </div>
                 
                 <div class="glass-card cart-action-card" style="margin-top: 25px; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
+                    ${stockStatusHtml}
+                    ${limitStatusHtml}
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 12px;">
                         <span style="font-weight: 700; color: var(--text-gray); font-size: 15px;">السعر الفردي:</span>
                         <span style="font-weight: 900; color: var(--secondary-color); font-size: 18px;">${originalPriceHtml}</span>
@@ -183,18 +234,8 @@ function renderProductDetails(prod) {
                         <span class="details-price" id="detailsPrice">${originalPriceHtml}</span>
                     </div>
                     
-                    <div class="details-qty-block" style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border-color); padding: 8px 15px; border-radius: 12px; background: rgba(0,0,0,0.01); margin-top: 5px;">
-                        <span style="font-weight: 800; color: var(--text-gray); font-size: 15px;">الكمية:</span>
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <button class="qty-btn" id="detailsQtyPlus" style="width: 32px; height: 32px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; cursor: pointer; color: var(--primary-color); font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fa-solid fa-plus"></i></button>
-                            <span id="detailsQtyVal" style="font-weight: 800; font-size: 18px; width: 25px; text-align: center; color: var(--text-dark);">1</span>
-                            <button class="qty-btn" id="detailsQtyMinus" style="width: 32px; height: 32px; font-size: 15px; border-radius: 8px; border: 1px solid var(--border-color); background: white; cursor: pointer; color: var(--primary-color); font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fa-solid fa-minus"></i></button>
-                        </div>
-                    </div>
-                    
-                    <button class="btn-primary" id="detailsAddToCartBtn" style="padding: 15px; font-size: 16px; border-radius: 12px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px;">
-                        <i class="fa-solid fa-cart-plus"></i> أضف لعربة التسوق
-                    </button>
+                    ${qtyBlockHtml}
+                    ${addToCartBtnHtml}
                 </div>
             </div>
             
@@ -242,30 +283,49 @@ function renderProductDetails(prod) {
         </div>
     `;
 
-    // Initialize quantity triggers
-    const qtyVal = document.getElementById('detailsQtyVal');
-    const totalPriceElt = document.getElementById('detailsPrice');
+    if (!isOutOfStock) {
+        // Initialize quantity triggers
+        const qtyVal = document.getElementById('detailsQtyVal');
+        const totalPriceElt = document.getElementById('detailsPrice');
 
-    document.getElementById('detailsQtyPlus').addEventListener('click', () => {
-        selectedQty++;
-        qtyVal.textContent = selectedQty;
-        const total = Math.round(pricing.finalPrice * selectedQty * 100) / 100;
-        totalPriceElt.textContent = `${total} ج.م`;
-    });
+        document.getElementById('detailsQtyPlus').addEventListener('click', () => {
+            let maxAllowed = Infinity;
+            if (prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
+                maxAllowed = Math.min(maxAllowed, Number(prod.stock));
+            }
+            if (prod.maxLimit !== undefined && prod.maxLimit !== null && prod.maxLimit !== '') {
+                maxAllowed = Math.min(maxAllowed, Number(prod.maxLimit));
+            }
 
-    document.getElementById('detailsQtyMinus').addEventListener('click', () => {
-        if (selectedQty > 1) {
-            selectedQty--;
+            if (selectedQty >= maxAllowed) {
+                if (prod.maxLimit && selectedQty >= Number(prod.maxLimit)) {
+                    alert(`عذراً، أقصى كمية مسموح بطلبها من هذا المنتج هي ${prod.maxLimit} قطع.`);
+                } else {
+                    alert(`عذراً، لا تتوفر كمية أكبر في المخزن. المتاح حالياً هو ${prod.stock} قطع فقط.`);
+                }
+                return;
+            }
+
+            selectedQty++;
             qtyVal.textContent = selectedQty;
             const total = Math.round(pricing.finalPrice * selectedQty * 100) / 100;
             totalPriceElt.textContent = `${total} ج.م`;
-        }
-    });
+        });
 
-    // Add to cart trigger
-    document.getElementById('detailsAddToCartBtn').addEventListener('click', () => {
-        addToCartWithQty(prod, selectedQty);
-    });
+        document.getElementById('detailsQtyMinus').addEventListener('click', () => {
+            if (selectedQty > 1) {
+                selectedQty--;
+                qtyVal.textContent = selectedQty;
+                const total = Math.round(pricing.finalPrice * selectedQty * 100) / 100;
+                totalPriceElt.textContent = `${total} ج.م`;
+            }
+        });
+
+        // Add to cart trigger
+        document.getElementById('detailsAddToCartBtn').addEventListener('click', () => {
+            addToCartWithQty(prod, selectedQty);
+        });
+    }
 
     // Tab buttons trigger
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -319,7 +379,7 @@ async function loadRelatedProducts(category, currentId) {
                             <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                         </a>
                         <div class="product-price">${priceHtml}</div>
-                        <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}">
+                        <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
                         </div>
                     </div>
                 `;
@@ -371,6 +431,27 @@ async function loadRelatedProducts(category, currentId) {
 function addToCartWithQty(product, qty) {
     const existing = cart.find(item => item.id === product.id);
     const pricing = getProductPricing(product);
+    const currentQty = existing ? existing.quantity : 0;
+    const newQty = currentQty + qty;
+
+    // Check stock limit
+    if (product.stock !== undefined && product.stock !== null && product.stock !== '') {
+        const stock = Number(product.stock);
+        if (newQty > stock) {
+            alert(`عذراً، لا تتوفر كمية كافية في المخزن (المتاح: ${stock}، لديك في العربة: ${currentQty}).`);
+            return;
+        }
+    }
+
+    // Check max limit
+    if (product.maxLimit !== undefined && product.maxLimit !== null && product.maxLimit !== '') {
+        const maxLimit = Number(product.maxLimit);
+        if (newQty > maxLimit) {
+            alert(`عذراً، أقصى كمية مسموح بطلبها من هذا المنتج هي ${maxLimit} قطع.`);
+            return;
+        }
+    }
+
     if (existing) {
         existing.quantity += qty;
     } else {
@@ -381,7 +462,9 @@ function addToCartWithQty(product, qty) {
             originalPrice: pricing.originalPrice,
             discountPercent: pricing.discountPercent,
             image: product.image,
-            quantity: qty
+            quantity: qty,
+            stock: product.stock !== undefined && product.stock !== null ? Number(product.stock) : null,
+            maxLimit: product.maxLimit !== undefined && product.maxLimit !== null ? Number(product.maxLimit) : null
         });
     }
     saveCart();
@@ -391,8 +474,29 @@ function addToCartWithQty(product, qty) {
     cartModal.classList.add('active');
 }
 
-window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null) {
+window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null, stock = null, limit = null) {
     const existing = cart.find(item => item.id === id);
+    const currentQty = existing ? existing.quantity : 0;
+    const newQty = currentQty + 1;
+
+    // Check stock limit
+    if (stock !== undefined && stock !== null && stock !== '') {
+        const stockNum = Number(stock);
+        if (newQty > stockNum) {
+            alert(`عذراً، لا تتوفر كمية كافية في المخزن (المتاح: ${stockNum}، لديك في العربة: ${currentQty}).`);
+            return;
+        }
+    }
+
+    // Check max limit
+    if (limit !== undefined && limit !== null && limit !== '') {
+        const limitNum = Number(limit);
+        if (newQty > limitNum) {
+            alert(`عذراً، أقصى كمية مسموح بطلبها من هذا المنتج هي ${limitNum} قطع.`);
+            return;
+        }
+    }
+
     if (existing) {
         existing.quantity += 1;
     } else {
@@ -403,7 +507,9 @@ window.addFromGrid = function (id, name, price, img, originalPrice = null, disco
             originalPrice: originalPrice !== null ? Number(originalPrice) : price,
             discountPercent: discountPercent !== null ? Number(discountPercent) : 0,
             image: img,
-            quantity: 1
+            quantity: 1,
+            stock: stock !== null && stock !== '' ? Number(stock) : null,
+            maxLimit: limit !== null && limit !== '' ? Number(limit) : null
         });
     }
     saveCart();
@@ -413,6 +519,24 @@ window.addFromGrid = function (id, name, price, img, originalPrice = null, disco
 window.updateQty = function (id, delta) {
     const item = cart.find(i => i.id === id);
     if (item) {
+        if (delta > 0) {
+            // Check stock limit
+            if (item.stock !== undefined && item.stock !== null && item.stock !== '') {
+                const stock = Number(item.stock);
+                if (item.quantity + delta > stock) {
+                    alert(`عذراً، لا تتوفر كمية كافية في المخزن. المتاح هو ${stock} قطع فقط.`);
+                    return;
+                }
+            }
+            // Check max limit
+            if (item.maxLimit !== undefined && item.maxLimit !== null && item.maxLimit !== '') {
+                const maxLimit = Number(item.maxLimit);
+                if (item.quantity + delta > maxLimit) {
+                    alert(`عذراً، الحد الأقصى لطلب هذا المنتج هو ${maxLimit} قطع.`);
+                    return;
+                }
+            }
+        }
         item.quantity += delta;
         if (item.quantity <= 0) {
             cart = cart.filter(i => i.id !== id);
@@ -438,6 +562,21 @@ function updateGridActionsUI() {
         const id = container.id.replace('product-action-', '');
         const itemInCart = cart.find(i => i.id === id);
 
+        const stockAttr = container.dataset.stock;
+        const limitAttr = container.dataset.limit;
+        const stock = (stockAttr !== undefined && stockAttr !== null && stockAttr !== '') ? Number(stockAttr) : null;
+        const limit = (limitAttr !== undefined && limitAttr !== null && limitAttr !== '') ? Number(limitAttr) : null;
+
+        // If product is out of stock completely
+        if (stock !== null && stock <= 0) {
+            container.innerHTML = `
+                <button class="add-to-cart-btn" style="background-color: #a0aec0; cursor: not-allowed; opacity: 0.8; margin-top: 10px; width: 100%;" disabled>
+                    <i class="fa-solid fa-ban"></i> نفذت الكمية
+                </button>
+            `;
+            return;
+        }
+
         if (itemInCart) {
             container.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(11, 128, 122, 0.1); border-radius: 8px; padding: 5px; margin-top: 10px;">
@@ -453,7 +592,7 @@ function updateGridActionsUI() {
             const originalPrice = container.dataset.originalPrice || price;
             const discountPercent = container.dataset.discountPercent || 0;
             container.innerHTML = `
-                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent})">
+                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent}, ${stockAttr !== undefined && stockAttr !== null && stockAttr !== '' ? Number(stockAttr) : 'null'}, ${limitAttr !== undefined && limitAttr !== null && limitAttr !== '' ? Number(limitAttr) : 'null'})">
                     <i class="fa-solid fa-cart-plus"></i> أضف للعربة
                 </button>
             `;

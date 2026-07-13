@@ -1,5 +1,5 @@
 import { db, storage } from './firebase-config.js';
-import { collection, addDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, addDoc, doc, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
 const orderForm = document.getElementById('orderForm');
@@ -169,6 +169,20 @@ orderForm.addEventListener('submit', async (e) => {
 
     try {
         await addDoc(collection(db, "orders"), orderData);
+
+        // Decrement stock in Firestore for items in the cart
+        for (let item of cart) {
+            if (item.stock !== undefined && item.stock !== null && item.stock !== '') {
+                try {
+                    const productRef = doc(db, 'products', item.id);
+                    await updateDoc(productRef, {
+                        stock: increment(-Number(item.quantity))
+                    });
+                } catch (stockErr) {
+                    console.error(`Failed to decrement stock for product ${item.id}:`, stockErr);
+                }
+            }
+        }
         
         // Show Success
         alertBox.textContent = 'تم إرسال طلبك بنجاح! سنتواصل معك قريباً.';

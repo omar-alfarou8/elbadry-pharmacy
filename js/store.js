@@ -190,7 +190,7 @@ function loadMoreProducts() {
                     <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                 </a>
                 <div class="product-price">${priceHtml}</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${storeImgUrl}">
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${storeImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
                 </div>
             </div>
         `;
@@ -220,14 +220,16 @@ function loadMoreProducts() {
     }
 }
 
-window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null) {
+window.addFromGrid = function (id, name, price, img, originalPrice = null, discountPercent = null, stock = null, limit = null) {
     addToCart({ 
         id, 
         name, 
         price, 
         image: img,
         originalPrice: originalPrice !== null ? Number(originalPrice) : price,
-        discountPercent: discountPercent !== null ? Number(discountPercent) : 0
+        discountPercent: discountPercent !== null ? Number(discountPercent) : 0,
+        stock: stock !== null && stock !== '' ? Number(stock) : null,
+        maxLimit: limit !== null && limit !== '' ? Number(limit) : null
     });
 };
 
@@ -236,6 +238,21 @@ function updateGridActionsUI() {
     containers.forEach(container => {
         const id = container.id.replace('product-action-', '');
         const itemInCart = cart.find(i => i.id === id);
+
+        const stockAttr = container.dataset.stock;
+        const limitAttr = container.dataset.limit;
+        const stock = (stockAttr !== undefined && stockAttr !== null && stockAttr !== '') ? Number(stockAttr) : null;
+        const limit = (limitAttr !== undefined && limitAttr !== null && limitAttr !== '') ? Number(limitAttr) : null;
+
+        // If product is out of stock completely
+        if (stock !== null && stock <= 0) {
+            container.innerHTML = `
+                <button class="add-to-cart-btn" style="background-color: #a0aec0; cursor: not-allowed; opacity: 0.8; margin-top: 10px; width: 100%;" disabled>
+                    <i class="fa-solid fa-ban"></i> نفذت الكمية
+                </button>
+            `;
+            return;
+        }
 
         if (itemInCart) {
             container.innerHTML = `
@@ -252,7 +269,7 @@ function updateGridActionsUI() {
             const originalPrice = container.dataset.originalPrice || price;
             const discountPercent = container.dataset.discountPercent || 0;
             container.innerHTML = `
-                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent})">
+                <button class="add-to-cart-btn" onclick="addFromGrid('${id}', '${name}', ${price}, '${img}', ${originalPrice}, ${discountPercent}, ${stockAttr !== undefined && stockAttr !== null && stockAttr !== '' ? Number(stockAttr) : 'null'}, ${limitAttr !== undefined && limitAttr !== null && limitAttr !== '' ? Number(limitAttr) : 'null'})">
                     <i class="fa-solid fa-cart-plus"></i> أضف للعربة
                 </button>
             `;
@@ -368,6 +385,27 @@ cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartMod
 
 function addToCart(product) {
     const existing = cart.find(item => item.id === product.id);
+    const currentQty = existing ? existing.quantity : 0;
+    const newQty = currentQty + 1;
+
+    // Check stock limit
+    if (product.stock !== undefined && product.stock !== null && product.stock !== '') {
+        const stock = Number(product.stock);
+        if (newQty > stock) {
+            alert(`عذراً، لا تتوفر كمية كافية في المخزن (المتاح: ${stock}، لديك في العربة: ${currentQty}).`);
+            return;
+        }
+    }
+
+    // Check max limit
+    if (product.maxLimit !== undefined && product.maxLimit !== null && product.maxLimit !== '') {
+        const maxLimit = Number(product.maxLimit);
+        if (newQty > maxLimit) {
+            alert(`عذراً، أقصى كمية مسموح بطلبها من هذا المنتج هي ${maxLimit} قطع.`);
+            return;
+        }
+    }
+
     if (existing) {
         existing.quantity += 1;
     } else {
@@ -378,7 +416,9 @@ function addToCart(product) {
             originalPrice: product.originalPrice !== undefined ? product.originalPrice : product.price,
             discountPercent: product.discountPercent !== undefined ? product.discountPercent : 0,
             image: product.image,
-            quantity: 1 
+            quantity: 1,
+            stock: product.stock !== undefined && product.stock !== null ? Number(product.stock) : null,
+            maxLimit: product.maxLimit !== undefined && product.maxLimit !== null ? Number(product.maxLimit) : null
         });
     }
     saveCart();
@@ -389,6 +429,24 @@ function addToCart(product) {
 window.updateQty = function (id, delta) {
     const item = cart.find(i => i.id === id);
     if (item) {
+        if (delta > 0) {
+            // Check stock limit
+            if (item.stock !== undefined && item.stock !== null && item.stock !== '') {
+                const stock = Number(item.stock);
+                if (item.quantity + delta > stock) {
+                    alert(`عذراً، لا تتوفر كمية كافية في المخزن. المتاح هو ${stock} قطع فقط.`);
+                    return;
+                }
+            }
+            // Check max limit
+            if (item.maxLimit !== undefined && item.maxLimit !== null && item.maxLimit !== '') {
+                const maxLimit = Number(item.maxLimit);
+                if (item.quantity + delta > maxLimit) {
+                    alert(`عذراً، الحد الأقصى لطلب هذا المنتج هو ${maxLimit} قطع.`);
+                    return;
+                }
+            }
+        }
         item.quantity += delta;
         if (item.quantity <= 0) {
             cart = cart.filter(i => i.id !== id);

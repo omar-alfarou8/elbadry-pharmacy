@@ -162,6 +162,12 @@ productForm.addEventListener('submit', async (e) => {
     const discountInput = document.getElementById('productDiscount');
     const discount = discountInput && discountInput.value ? Number(discountInput.value) : 0;
 
+    const stockInput = document.getElementById('productStock');
+    const stock = stockInput && stockInput.value !== '' ? Number(stockInput.value) : null;
+
+    const limitInput = document.getElementById('productLimit');
+    const maxLimit = limitInput && limitInput.value !== '' ? Number(limitInput.value) : null;
+
     let image = document.getElementById('productImage').value || 'https://via.placeholder.com/150';
 
     // Additional fields
@@ -187,7 +193,9 @@ productForm.addEventListener('submit', async (e) => {
             description,
             usage,
             activeIngredients,
-            warnings
+            warnings,
+            stock: stock,
+            maxLimit: maxLimit
         };
 
         if (id) {
@@ -250,6 +258,17 @@ window.editProduct = function (id) {
     const discountInput = document.getElementById('productDiscount');
     if (discountInput) {
         discountInput.value = prod.discount || '';
+    }
+
+    // Set stock and limit fields
+    const stockInput = document.getElementById('productStock');
+    if (stockInput) {
+        stockInput.value = prod.stock !== undefined && prod.stock !== null ? prod.stock : '';
+    }
+
+    const limitInput = document.getElementById('productLimit');
+    if (limitInput) {
+        limitInput.value = prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : '';
     }
 
     // Set checked checkboxes for categories
@@ -605,7 +624,7 @@ async function loadProductsPage(page = 1) {
         // If cache is empty, fetch all products from Firestore once
         if (cachedProductsList.length === 0) {
             isFetchingProducts = true;
-            productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
+            productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
             
             const q = query(productsCol, orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
@@ -656,7 +675,7 @@ async function loadProductsPage(page = 1) {
 
     } catch (error) {
         console.error("Error loading products:", error);
-        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--error-color);"><i class="fa-solid fa-circle-exclamation"></i> حدث خطأ أثناء تحميل المنتجات.</td></tr>`;
+        productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--error-color);"><i class="fa-solid fa-circle-exclamation"></i> حدث خطأ أثناء تحميل المنتجات.</td></tr>`;
         isFetchingProducts = false;
     }
 }
@@ -666,7 +685,7 @@ function renderProductsList(products) {
     allProducts = {}; // Reset local cache for editProduct functionality
     
     if (products.length === 0) {
-        productsTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">لا توجد منتجات مطابقة.</td></tr>`;
+        productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">لا توجد منتجات مطابقة.</td></tr>`;
         return;
     }
 
@@ -688,6 +707,15 @@ function renderProductsList(products) {
             `;
         }
 
+        const stockVal = prod.stock !== undefined && prod.stock !== null && prod.stock !== '' ? prod.stock : 'مفتوح';
+        const limitVal = prod.maxLimit !== undefined && prod.maxLimit !== null && prod.maxLimit !== '' ? prod.maxLimit : 'لا يوجد';
+        const stockLimitHtml = `
+            <div style="font-size: 13px; line-height: 1.4;">
+                <div>المخزن: <span style="font-weight: bold; color: ${stockVal === 0 ? 'var(--error-color)' : 'inherit'};">${stockVal}</span></div>
+                <div>الحد: <span style="font-weight: bold; color: var(--primary-color);">${limitVal}</span></div>
+            </div>
+        `;
+
         const tr = document.createElement('tr');
         const imgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         tr.innerHTML = `
@@ -695,6 +723,7 @@ function renderProductsList(products) {
             <td><strong>${escapeHTML(prod.name)}</strong></td>
             <td>${escapeHTML(categoryText)}</td>
             <td>${priceHtml}</td>
+            <td>${stockLimitHtml}</td>
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
                 <button class="action-btn delete-btn" onclick="deleteProduct('${id}')"><i class="fa-solid fa-trash"></i></button>
