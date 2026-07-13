@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, escapeHTML } from './firebase-config.js';
 import { collection, query, orderBy, getDocs, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const productsGrid = document.getElementById('productsGrid');
@@ -153,18 +153,19 @@ function loadMoreProducts() {
         const div = document.createElement('div');
         div.className = 'product-card';
         div.style.animation = 'fadeIn 0.5s ease forwards';
+        const storeImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         div.innerHTML = `
             ${badgeHtml}
             <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
-                <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+                <img src="${storeImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
             </a>
             <div class="product-info">
-                <div class="product-category">${categoryText}</div>
+                <div class="product-category">${escapeHTML(categoryText)}</div>
                 <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
-                    <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
+                    <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                 </a>
                 <div class="product-price">${priceHtml}</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${prod.image}">
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${storeImgUrl}">
                 </div>
             </div>
         `;

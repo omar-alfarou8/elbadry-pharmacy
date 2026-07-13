@@ -1,4 +1,4 @@
-import { db } from './firebase-config.js';
+import { db, escapeHTML } from './firebase-config.js';
 import { collection, query, getDocs, getDoc, addDoc, onSnapshot, doc, limit } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const relatedProductsSection = document.getElementById('relatedProductsSection');
@@ -114,12 +114,13 @@ function renderProductDetails(prod) {
 
     const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
 
+    const detailsImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
     productDetailsContent.innerHTML = `
         <div class="details-grid">
             <!-- Right Column: Image and Action Card -->
             <div class="details-image-sec">
                 <div class="glass-card image-card">
-                    <img src="${prod.image}" alt="${prod.name}" class="main-prod-img" id="mainProdImg">
+                    <img src="${detailsImgUrl}" alt="${escapeHTML(prod.name)}" class="main-prod-img" id="mainProdImg">
                 </div>
                 
                 <div class="glass-card cart-action-card" style="margin-top: 25px; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
@@ -149,8 +150,8 @@ function renderProductDetails(prod) {
             
             <!-- Left Column: Detailed Info -->
             <div class="details-info-sec">
-                <div class="details-category-badge">${categoryText}</div>
-                <h1 class="details-title">${prod.name}</h1>
+                <div class="details-category-badge">${escapeHTML(categoryText)}</div>
+                <h1 class="details-title">${escapeHTML(prod.name)}</h1>
                 ${priceBadgeHtml}
                 
                 <!-- Tabs Container -->
@@ -164,19 +165,19 @@ function renderProductDetails(prod) {
                     
                     <div class="tab-contents" style="min-height: 150px;">
                         <div class="tab-pane active" id="tab-description">
-                            ${prod.description ? `<p>${prod.description}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
+                            ${prod.description ? `<p>${escapeHTML(prod.description)}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-usage">
-                            ${prod.usage ? `<p>${prod.usage}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
+                            ${prod.usage ? `<p>${escapeHTML(prod.usage)}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-ingredients">
-                            ${prod.activeIngredients ? `<p>${prod.activeIngredients}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
+                            ${prod.activeIngredients ? `<p>${escapeHTML(prod.activeIngredients)}</p>` : `<p style="color: var(--text-gray); font-style: italic;"></p>`}
                         </div>
                         <div class="tab-pane" id="tab-warnings">
                             ${prod.warnings ? `
                                 <p style="display: flex; align-items: flex-start; gap: 8px;">
                                     <i class="fa-solid fa-triangle-exclamation" style="color: var(--error-color); margin-top: 5px; font-size: 18px; flex-shrink:0;"></i>
-                                    <span>${prod.warnings}</span>
+                                    <span>${escapeHTML(prod.warnings)}</span>
                                 </p>
                             ` : `
                                 <p style="display: flex; align-items: flex-start; gap: 8px; color: var(--text-gray); font-style: italic;">
@@ -262,18 +263,19 @@ async function loadRelatedProducts(category, currentId) {
                 div.className = 'product-card';
                 div.style.animation = 'fadeIn 0.5s ease forwards';
                 div.style.position = 'relative';
+                const relatedImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
                 div.innerHTML = `
                     ${badgeHtml}
                     <a href="product.html?id=${id}" style="display: block; overflow: hidden;">
-                        <img src="${prod.image}" alt="${prod.name}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+                        <img src="${relatedImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
                     </a>
                     <div class="product-info">
-                        <div class="product-category">${categoryText}</div>
+                        <div class="product-category">${escapeHTML(categoryText)}</div>
                         <a href="product.html?id=${id}" style="color: inherit; text-decoration: none;">
-                            <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${prod.name}</h3>
+                            <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                         </a>
                         <div class="product-price">${priceHtml}</div>
-                        <div id="product-action-${id}" class="product-action-container" data-name="${prod.name.replace(/"/g, '&quot;')}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${prod.image}">
+                        <div id="product-action-${id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}">
                         </div>
                     </div>
                 `;

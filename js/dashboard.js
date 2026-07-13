@@ -1,4 +1,4 @@
-import { auth, db, storage } from './firebase-config.js';
+import { auth, db, storage, escapeHTML } from './firebase-config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, limit, startAfter, where, startAt, endAt, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
@@ -32,6 +32,9 @@ const categoriesCol = collection(db, 'categories');
 
 // Local products cache
 let allProducts = {};
+
+// Local orders cache
+let allOrders = {};
 
 // Pagination and Filter State
 const PAGE_SIZE = 15;
@@ -303,38 +306,48 @@ window.deleteProduct = async function (id) {
     }
 };
 
-window.viewOrder = function (id, name, phone, governorate, address, items, total, status, prescriptionUrl) {
+window.viewOrder = function (id) {
+    const order = allOrders[id];
+    if (!order) return;
+
     const modal = document.getElementById('orderDetailsModal');
     const content = document.getElementById('orderDetailsContent');
     const actionDiv = document.getElementById('orderActionDiv');
 
     let itemsHtml = ``;
-    try {
-        let parsedItems = JSON.parse(decodeURIComponent(items));
+    if (order.items && order.items.length > 0) {
         itemsHtml = `<ul>`;
-        parsedItems.forEach(item => {
-            itemsHtml += `<li>${item.name} - الكمية: ${item.quantity} - ${item.price} ج.م</li>`;
+        order.items.forEach(item => {
+            itemsHtml += `<li>${escapeHTML(item.name)} - الكمية: ${Number(item.quantity)} - ${Number(item.price)} ج.م</li>`;
         });
         itemsHtml += `</ul>`;
-    } catch (e) {
-        itemsHtml = `<div style="white-space: pre-wrap; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 5px; border: 1px solid var(--border-color);">${decodeURIComponent(items)}</div>`; // Fallback for textual strings
+    } else {
+        itemsHtml = `<div style="white-space: pre-wrap; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 5px; border: 1px solid var(--border-color);">${escapeHTML(order.orderDetails || 'لا توجد تفاصيل')}</div>`;
     }
 
     let prescriptionHtml = '';
-    if (prescriptionUrl && prescriptionUrl !== 'undefined' && prescriptionUrl !== 'null' && prescriptionUrl.length > 5) {
+    const pUrl = order.prescriptionUrl;
+    if (pUrl && typeof pUrl === 'string' && pUrl.length > 5 && (pUrl.startsWith('http://') || pUrl.startsWith('https://'))) {
+        const escapedUrl = escapeHTML(pUrl);
         prescriptionHtml = `
             <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border-color);">
             <p><strong>صورة الروشتة المرفقة:</strong></p>
-            <a href="${prescriptionUrl}" target="_blank">
-                <img src="${prescriptionUrl}" style="max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 10px; border: 1px solid var(--border-color);">
+            <a href="${escapedUrl}" target="_blank">
+                <img src="${escapedUrl}" style="max-width: 100%; max-height: 250px; border-radius: 10px; margin-top: 10px; border: 1px solid var(--border-color);">
             </a>
         `;
     }
 
+    const name = escapeHTML(order.name);
+    const phone = escapeHTML(order.phone);
+    const governorate = order.governorate ? escapeHTML(order.governorate) : 'غير محدد';
+    const address = escapeHTML(order.address || 'غير محدد');
+    const total = Number(order.total) || 0;
+
     content.innerHTML = `
         <p><strong>اسم العميل:</strong> ${name}</p>
         <p><strong>رقم الهاتف:</strong> <a href="tel:${phone}" dir="ltr">${phone}</a></p>
-        <p><strong>المحافظة:</strong> <span style="color: var(--primary-color); font-weight: bold;">${governorate !== 'undefined' ? governorate : 'غير محدد'}</span></p>
+        <p><strong>المحافظة:</strong> <span style="color: var(--primary-color); font-weight: bold;">${governorate}</span></p>
         <p><strong>العنوان:</strong> ${address}</p>
         <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border-color);">
         <p><strong>الطلب / المنتجات:</strong></p>
@@ -343,7 +356,7 @@ window.viewOrder = function (id, name, phone, governorate, address, items, total
         ${prescriptionHtml}
     `;
 
-    if (status === 'new') {
+    if (order.status === 'new' || !order.status) {
         actionDiv.innerHTML = `<button class="btn-primary" onclick="markOrderDone('${id}')">تحديد كـ "مكتمل"</button>`;
     } else {
         actionDiv.innerHTML = `<span style="color: var(--success-color); font-weight: bold;"><i class="fa-solid fa-check-circle"></i> هذا الطلب مكتمل</span>`;
@@ -399,9 +412,10 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         // Visual indicator for category icon/image
         let visualHtml = '';
         if (cat.type === 'icon') {
-            visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--primary-color);"><i class="${cat.icon || 'fa-solid fa-tags'}"></i></span>`;
+            visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--primary-color);"><i class="${escapeHTML(cat.icon) || 'fa-solid fa-tags'}"></i></span>`;
         } else if (cat.type === 'image') {
-            visualHtml = `<img src="${cat.image || 'https://via.placeholder.com/150'}" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-left: 10px; border: 1px solid var(--border-color);">`;
+            const catImgUrl = cat.image && (cat.image.startsWith('http://') || cat.image.startsWith('https://')) ? escapeHTML(cat.image) : 'https://via.placeholder.com/150';
+            visualHtml = `<img src="${catImgUrl}" style="width: 30px; height: 30px; border-radius: 6px; object-fit: cover; margin-left: 10px; border: 1px solid var(--border-color);">`;
         } else {
             visualHtml = `<span style="margin-left: 10px; font-size: 18px; color: var(--text-gray);"><i class="fa-solid fa-tags"></i></span>`;
         }
@@ -412,18 +426,18 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
         
-        const safeCatName = cat.name.replace(/'/g, "\\'");
-        const safeIcon = (cat.icon || '').replace(/'/g, "\\'");
-        const safeImage = (cat.image || '').replace(/'/g, "\\'");
+        const safeCatName = escapeHTML(cat.name).replace(/'/g, "\\'");
+        const safeIcon = escapeHTML(cat.icon || '').replace(/'/g, "\\'");
+        const safeImage = escapeHTML(cat.image || '').replace(/'/g, "\\'");
 
         li.innerHTML = `
             <div style="display: flex; align-items: center;">
                 ${visualHtml}
-                <span style="font-weight: bold;">${cat.name}</span>
+                <span style="font-weight: bold;">${escapeHTML(cat.name)}</span>
                 ${discountHtml}
             </div>
             <div style="display: flex; gap: 5px;">
-                <button onclick="editCategory('${id}', '${safeCatName}', '${cat.type || 'icon'}', '${safeIcon}', '${safeImage}', ${cat.discount || 0})" style="background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="editCategory('${id}', '${safeCatName}', '${escapeHTML(cat.type || 'icon')}', '${safeIcon}', '${safeImage}', ${cat.discount || 0})" style="background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteCategory('${id}')" style="background: var(--error-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
@@ -435,8 +449,8 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
             div.style = "display: flex; align-items: center; gap: 8px; font-family: inherit;";
             const catDiscountText = cat.discount ? ` <span style="color: var(--error-color); font-size: 13px;">(خصم ${cat.discount}%)</span>` : '';
             div.innerHTML = `
-                <input type="checkbox" name="productCategories" value="${cat.name}" id="cat_chk_${id}" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;">
-                <label for="cat_chk_${id}" style="margin: 0; cursor: pointer; font-weight: 500; font-size: 15px;">${cat.name}${catDiscountText}</label>
+                <input type="checkbox" name="productCategories" value="${escapeHTML(cat.name)}" id="cat_chk_${id}" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;">
+                <label for="cat_chk_${id}" style="margin: 0; cursor: pointer; font-weight: 500; font-size: 15px;">${escapeHTML(cat.name)}${catDiscountText}</label>
             `;
             productCategoriesContainer.appendChild(div);
         }
@@ -675,10 +689,11 @@ function renderProductsList(products) {
         }
 
         const tr = document.createElement('tr');
+        const imgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         tr.innerHTML = `
-            <td><img src="${prod.image}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
-            <td><strong>${prod.name}</strong></td>
-            <td>${categoryText}</td>
+            <td><img src="${imgUrl}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
+            <td><strong>${escapeHTML(prod.name)}</strong></td>
+            <td>${escapeHTML(categoryText)}</td>
             <td>${priceHtml}</td>
             <td>
                 <button class="action-btn edit-btn" onclick="editProduct('${id}')"><i class="fa-solid fa-pen"></i></button>
@@ -774,11 +789,14 @@ onSnapshot(query(ordersCol, orderBy('createdAt', 'desc'), limit(50)), (snapshot)
     recentOrdersBody.innerHTML = '';
     allOrdersBody.innerHTML = '';
     totalOrdersCount.textContent = snapshot.size;
+    allOrders = {}; // Reset local cache of orders
 
     let count = 0;
     snapshot.forEach((docSnap) => {
         const order = docSnap.data();
         const id = docSnap.id;
+        allOrders[id] = order; // Cache order locally for viewOrder
+
         const statusBadge = order.status === 'done'
             ? `<span class="status-badge status-done">مكتمل</span>`
             : `<span class="status-badge status-new">جديد</span>`;
@@ -786,23 +804,16 @@ onSnapshot(query(ordersCol, orderBy('createdAt', 'desc'), limit(50)), (snapshot)
         const dateObj = order.createdAt ? order.createdAt.toDate() : new Date();
         const dateStr = dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-        let itemsToPass = order.orderDetails || "لا توجد تفاصيل";
-        if (order.items && order.items.length > 0) {
-            itemsToPass = JSON.stringify(order.items);
-        }
-        const safeItems = encodeURIComponent(itemsToPass);
         const total = order.total || 0;
-        const prescriptionUrl = order.prescriptionUrl || '';
-
         const governorate = order.governorate || 'غير محدد';
 
         // Add to All orders
         const allTr = document.createElement('tr');
         allTr.innerHTML = `
             <td dir="ltr" style="font-size:14px; color:var(--text-gray)">${dateStr}</td>
-            <td><strong>${order.name}</strong><div style="font-size: 12px; color: var(--primary-color)">${governorate}</div></td>
-            <td dir="ltr">${order.phone}</td>
-            <td><button class="btn-outline" style="padding: 5px 10px; font-size:13px;" onclick="viewOrder('${id}', '${order.name.replace(/'/g, "\\'")}', '${order.phone}', '${governorate}', '${order.address.replace(/'/g, "\\'")}', '${safeItems}', '${total}', '${order.status || 'new'}', '${prescriptionUrl}')">التفاصيل</button></td>
+            <td><strong>${escapeHTML(order.name)}</strong><div style="font-size: 12px; color: var(--primary-color)">${escapeHTML(governorate)}</div></td>
+            <td dir="ltr">${escapeHTML(order.phone)}</td>
+            <td><button class="btn-outline" style="padding: 5px 10px; font-size:13px;" onclick="viewOrder('${id}')">التفاصيل</button></td>
             <td>${statusBadge}</td>
             <td>
                 ${order.status !== 'done' ? `<button class="action-btn" style="color:var(--success-color)" title="إكمال" onclick="markOrderDone('${id}')"><i class="fa-solid fa-check"></i></button>` : ''}
@@ -815,7 +826,7 @@ onSnapshot(query(ordersCol, orderBy('createdAt', 'desc'), limit(50)), (snapshot)
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td style="font-family:monospace; color:var(--text-gray)">${id.substring(0, 6)}...</td>
-                <td><strong>${order.name}</strong></td>
+                <td><strong>${escapeHTML(order.name)}</strong></td>
                 <td dir="ltr" style="font-size:14px;">${dateStr}</td>
                 <td>${statusBadge}</td>
             `;
@@ -1101,11 +1112,13 @@ if (slidesTableBody) {
             allSlides[id] = slide;
 
             const tr = document.createElement('tr');
+            const slideImgUrl = slide.image && (slide.image.startsWith('http://') || slide.image.startsWith('https://')) ? escapeHTML(slide.image) : 'https://via.placeholder.com/150';
+            const slideLink = slide.link && (slide.link.startsWith('http://') || slide.link.startsWith('https://')) ? escapeHTML(slide.link) : '#';
             tr.innerHTML = `
-                <td><img src="${slide.image}" width="100" height="50" style="border-radius:6px; object-fit:cover; border: 1px solid var(--border-color);"></td>
-                <td><strong>${slide.title || 'بدون عنوان'}</strong></td>
-                <td>${slide.description || 'بدون وصف'}</td>
-                <td><a href="${slide.link}" target="_blank" style="color: var(--primary-color); word-break: break-all;">${slide.link}</a></td>
+                <td><img src="${slideImgUrl}" width="100" height="50" style="border-radius:6px; object-fit:cover; border: 1px solid var(--border-color);"></td>
+                <td><strong>${escapeHTML(slide.title || 'بدون عنوان')}</strong></td>
+                <td>${escapeHTML(slide.description || 'بدون وصف')}</td>
+                <td><a href="${slideLink}" target="_blank" style="color: var(--primary-color); word-break: break-all;">${slideLink}</a></td>
                 <td>
                     <button class="action-btn edit-btn" style="color: var(--primary-color); margin-left: 8px;" onclick="editSlide('${id}')"><i class="fa-solid fa-pen"></i></button>
                     <button class="action-btn delete-btn" onclick="deleteSlide('${id}')"><i class="fa-solid fa-trash"></i></button>
