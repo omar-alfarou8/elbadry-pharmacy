@@ -80,26 +80,25 @@ async function loadProducts() {
     }
 
     try {
-        // 2. Fetch fresh products from Firestore in the background
+        // 2. Listen to fresh products from Firestore in real-time
         const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
-        const querySnapshot = await getDocs(q);
+        onSnapshot(q, (querySnapshot) => {
+            const freshProducts = [];
+            querySnapshot.forEach((doc) => {
+                freshProducts.push({ id: doc.id, ...doc.data() });
+            });
 
-        const freshProducts = [];
-        querySnapshot.forEach((doc) => {
-            freshProducts.push({ id: doc.id, ...doc.data() });
+            // Save fresh products to localStorage cache
+            try {
+                localStorage.setItem('elbadry_products_cache', JSON.stringify(freshProducts));
+            } catch (e) {}
+
+            // 3. Update the list and refresh the UI
+            if (JSON.stringify(allProducts) !== JSON.stringify(freshProducts) || allProducts.length === 0) {
+                allProducts = freshProducts;
+                applyFilters();
+            }
         });
-
-        // Save fresh products to localStorage cache
-        try {
-            localStorage.setItem('elbadry_products_cache', JSON.stringify(freshProducts));
-        } catch (e) {}
-
-        // 3. Update the list and refresh the UI
-        // If data is different, or if we had no cache, apply filters to re-render
-        if (JSON.stringify(allProducts) !== JSON.stringify(freshProducts) || allProducts.length === 0) {
-            allProducts = freshProducts;
-            applyFilters();
-        }
 
     } catch (e) {
         console.error("Error loading fresh products from Firestore: ", e);
@@ -388,9 +387,12 @@ function addToCart(product) {
     const currentQty = existing ? existing.quantity : 0;
     const newQty = currentQty + 1;
 
+    // Find product in fresh list
+    const prod = allProducts.find(p => p.id === product.id) || product;
+
     // Check stock limit
-    if (product.stock !== undefined && product.stock !== null && product.stock !== '') {
-        const stock = Number(product.stock);
+    if (prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
+        const stock = Number(prod.stock);
         if (newQty > stock) {
             alert(`عذراً، لا تتوفر كمية كافية في المخزن (المتاح: ${stock}، لديك في العربة: ${currentQty}).`);
             return;
@@ -398,8 +400,8 @@ function addToCart(product) {
     }
 
     // Check max limit
-    if (product.maxLimit !== undefined && product.maxLimit !== null && product.maxLimit !== '') {
-        const maxLimit = Number(product.maxLimit);
+    if (prod.maxLimit !== undefined && prod.maxLimit !== null && prod.maxLimit !== '') {
+        const maxLimit = Number(prod.maxLimit);
         if (newQty > maxLimit) {
             alert(`عذراً، أقصى كمية مسموح بطلبها من هذا المنتج هي ${maxLimit} قطع.`);
             return;
@@ -417,8 +419,8 @@ function addToCart(product) {
             discountPercent: product.discountPercent !== undefined ? product.discountPercent : 0,
             image: product.image,
             quantity: 1,
-            stock: product.stock !== undefined && product.stock !== null ? Number(product.stock) : null,
-            maxLimit: product.maxLimit !== undefined && product.maxLimit !== null ? Number(product.maxLimit) : null
+            stock: prod.stock !== undefined && prod.stock !== null ? Number(prod.stock) : null,
+            maxLimit: prod.maxLimit !== undefined && prod.maxLimit !== null ? Number(prod.maxLimit) : null
         });
     }
     saveCart();
@@ -428,19 +430,24 @@ function addToCart(product) {
 // Global functions for cart UI manipulation
 window.updateQty = function (id, delta) {
     const item = cart.find(i => i.id === id);
+    const prod = allProducts.find(p => p.id === id);
+    
     if (item) {
         if (delta > 0) {
+            const stockLimit = prod && prod.stock !== undefined ? prod.stock : item.stock;
+            const maxOrderLimit = prod && prod.maxLimit !== undefined ? prod.maxLimit : item.maxLimit;
+
             // Check stock limit
-            if (item.stock !== undefined && item.stock !== null && item.stock !== '') {
-                const stock = Number(item.stock);
+            if (stockLimit !== undefined && stockLimit !== null && stockLimit !== '') {
+                const stock = Number(stockLimit);
                 if (item.quantity + delta > stock) {
                     alert(`عذراً، لا تتوفر كمية كافية في المخزن. المتاح هو ${stock} قطع فقط.`);
                     return;
                 }
             }
             // Check max limit
-            if (item.maxLimit !== undefined && item.maxLimit !== null && item.maxLimit !== '') {
-                const maxLimit = Number(item.maxLimit);
+            if (maxOrderLimit !== undefined && maxOrderLimit !== null && maxOrderLimit !== '') {
+                const maxLimit = Number(maxOrderLimit);
                 if (item.quantity + delta > maxLimit) {
                     alert(`عذراً، الحد الأقصى لطلب هذا المنتج هو ${maxLimit} قطع.`);
                     return;
