@@ -222,12 +222,12 @@ function loadMoreProducts() {
         const categoryImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         div.innerHTML = `
             ${badgeHtml}
-            <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
+            <a href="/product?id=${prod.id}" style="display: block; overflow: hidden;">
                 <img src="${categoryImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
             </a>
             <div class="product-info">
                 <div class="product-category">${escapeHTML(categoryText)}</div>
-                <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
+                <a href="/product?id=${prod.id}" style="color: inherit; text-decoration: none;">
                     <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                 </a>
                 <div class="product-price">${priceHtml}</div>

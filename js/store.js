@@ -180,12 +180,12 @@ function loadMoreProducts() {
         const storeImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         div.innerHTML = `
             ${badgeHtml}
-            <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
+            <a href="/product?id=${prod.id}" style="display: block; overflow: hidden;">
                 <img src="${storeImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
             </a>
             <div class="product-info">
                 <div class="product-category">${escapeHTML(categoryText)}</div>
-                <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
+                <a href="/product?id=${prod.id}" style="color: inherit; text-decoration: none;">
                     <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                 </a>
                 <div class="product-price">${priceHtml}</div>
@@ -322,10 +322,10 @@ function renderCategoriesUI(categories) {
     if (!categoriesGrid) return;
     categoriesGrid.innerHTML = '';
 
-    // Add the "All" (الكل) category card first as a real link pointing to store.html (always active on store.html)
+    // Add the "All" (الكل) category card first as a real link pointing to /store (always active on /store)
     const allCard = document.createElement('a');
     allCard.className = 'category-card active';
-    allCard.href = 'store.html';
+    allCard.href = '/store';
     allCard.innerHTML = `
         <div class="category-icon-wrapper">
             <i class="fa-solid fa-border-all"></i>
@@ -337,7 +337,7 @@ function renderCategoriesUI(categories) {
     categories.forEach(cat => {
         const card = document.createElement('a');
         card.className = 'category-card';
-        card.href = `category.html?name=${encodeURIComponent(cat.name)}`;
+        card.href = `/category?name=${encodeURIComponent(cat.name)}`;
 
         let visualHtml = '';
         if (cat.type === 'icon') {

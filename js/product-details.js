@@ -144,7 +144,7 @@ function showErrorPage(message) {
             <i class="fa-solid fa-circle-exclamation" style="font-size: 55px; color: var(--error-color);"></i>
             <h2 style="font-size: 22px; font-weight: bold; color: var(--text-dark);">${message}</h2>
             <p style="font-size: 15px; color: var(--text-gray); max-width: 450px; line-height: 1.6;">تأكد من صحة الرابط أو قم بتصفح المتجر للبحث عن منتجات بديلة.</p>
-            <a href="store.html" class="btn-primary" style="margin-top: 10px; border-radius: 10px;">انتقل إلى المتجر</a>
+            <a href="/store" class="btn-primary" style="margin-top: 10px; border-radius: 10px;">انتقل إلى المتجر</a>
         </div>
     `;
 }
@@ -370,12 +370,12 @@ async function loadRelatedProducts(category, currentId) {
                 const relatedImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
                 div.innerHTML = `
                     ${badgeHtml}
-                    <a href="product.html?id=${prod.id}" style="display: block; overflow: hidden;">
+                    <a href="/product?id=${prod.id}" style="display: block; overflow: hidden;">
                         <img src="${relatedImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
                     </a>
                     <div class="product-info">
                         <div class="product-category">${escapeHTML(categoryText)}</div>
-                        <a href="product.html?id=${prod.id}" style="color: inherit; text-decoration: none;">
+                        <a href="/product?id=${prod.id}" style="color: inherit; text-decoration: none;">
                             <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
                         </a>
                         <div class="product-price">${priceHtml}</div>

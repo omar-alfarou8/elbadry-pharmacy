@@ -6,7 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/fireba
 // Check Auth state immediately
 onAuthStateChanged(auth, (user) => {
     if (!user) {
-        window.location.href = 'admin.html';
+        window.location.href = '/admin';
     } else {
         // Securely show dashboard and hide loading screen
         const loader = document.getElementById('authLoading');
@@ -21,7 +21,7 @@ onAuthStateChanged(auth, (user) => {
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
     signOut(auth).then(() => {
-        window.location.href = 'admin.html';
+        window.location.href = '/admin';
     });
 });
 

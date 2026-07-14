@@ -4,7 +4,7 @@ import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gsta
 // Check if already logged in
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
     }
 });
 
@@ -31,7 +31,7 @@ loginForm.addEventListener('submit', async (e) => {
         loginAlert.classList.remove('hidden');
 
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/dashboard';
         }, 1000);
 
     } catch (error) {
