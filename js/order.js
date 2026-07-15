@@ -10,29 +10,92 @@ const orderDetailsInput = document.getElementById('orderDetails');
 const btnText = document.querySelector('.btn-text');
 const btnLoader = document.querySelector('.btn-loader');
 
-const prescriptionImageInput = document.getElementById('prescriptionImage');
+const uploadPrescriptionBtn = document.getElementById('uploadPrescriptionBtn');
+const uploadSourceModal = document.getElementById('uploadSourceModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const chooseCameraBtn = document.getElementById('chooseCameraBtn');
+const chooseGalleryBtn = document.getElementById('chooseGalleryBtn');
+const prescriptionGalleryImage = document.getElementById('prescriptionGalleryImage');
+const prescriptionCameraImage = document.getElementById('prescriptionCameraImage');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 const imagePreview = document.getElementById('imagePreview');
 const removeImageBtn = document.getElementById('removeImageBtn');
 
 let selectedImageFile = null;
 
-if (prescriptionImageInput) {
-    prescriptionImageInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            selectedImageFile = file;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.src = e.target.result;
-                imagePreviewContainer.style.display = 'flex';
-            }
-            reader.readAsDataURL(file);
+// Modal Logic
+if (uploadPrescriptionBtn && uploadSourceModal) {
+    // Detect mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    uploadPrescriptionBtn.addEventListener('click', () => {
+        if (isMobile) {
+            uploadSourceModal.classList.remove('hidden');
+        } else {
+            // On desktop, open file selector directly
+            prescriptionGalleryImage.click();
         }
     });
 
+    const closeModal = () => {
+        uploadSourceModal.classList.add('hidden');
+    };
+
+    closeModalBtn.addEventListener('click', closeModal);
+
+    // Close on click outside modal card
+    uploadSourceModal.addEventListener('click', (e) => {
+        if (e.target === uploadSourceModal) {
+            closeModal();
+        }
+    });
+
+    // Choose Camera Option
+    chooseCameraBtn.addEventListener('click', () => {
+        closeModal();
+        prescriptionCameraImage.click();
+    });
+
+    // Choose Gallery Option
+    chooseGalleryBtn.addEventListener('click', () => {
+        closeModal();
+        prescriptionGalleryImage.click();
+    });
+}
+
+// File Selection Logic
+function handleFileSelection(file) {
+    if (file) {
+        if (!file.type.startsWith('image/')) {
+            alert('يرجى اختيار ملف صورة صالح.');
+            return;
+        }
+        selectedImageFile = file;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreviewContainer.style.display = 'flex';
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+if (prescriptionGalleryImage) {
+    prescriptionGalleryImage.addEventListener('change', (e) => {
+        handleFileSelection(e.target.files[0]);
+    });
+}
+
+if (prescriptionCameraImage) {
+    prescriptionCameraImage.addEventListener('change', (e) => {
+        handleFileSelection(e.target.files[0]);
+    });
+}
+
+if (removeImageBtn) {
     removeImageBtn.addEventListener('click', () => {
-        prescriptionImageInput.value = '';
+        if (prescriptionGalleryImage) prescriptionGalleryImage.value = '';
+        if (prescriptionCameraImage) prescriptionCameraImage.value = '';
         selectedImageFile = null;
         imagePreviewContainer.style.display = 'none';
         imagePreview.src = '';
@@ -194,7 +257,8 @@ orderForm.addEventListener('submit', async (e) => {
         
         // Clear image preview
         selectedImageFile = null;
-        if(prescriptionImageInput) prescriptionImageInput.value = '';
+        if(prescriptionGalleryImage) prescriptionGalleryImage.value = '';
+        if(prescriptionCameraImage) prescriptionCameraImage.value = '';
         imagePreviewContainer.style.display = 'none';
         imagePreview.src = '';
         
