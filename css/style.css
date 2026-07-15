@@ -978,3 +978,22 @@ footer {
         text-align: right;
     }
 }
+
+/* Custom Cropper Styles to match El Badry Pharmacy branding */
+.cropper-line, .cropper-point {
+    background-color: var(--primary-color) !important;
+}
+.cropper-view-box {
+    outline: 2px solid var(--primary-color) !important;
+    outline-color: var(--primary-color) !important;
+}
+.cropper-bg {
+    background-image: none !important;
+    background-color: #eaeff2 !important;
+}
+.cropper-container {
+    direction: ltr !important; /* Cropper.js math works in LTR coordinate space */
+}
+.cropper-modal {
+    background-color: rgba(10, 36, 66, 0.4) !important;
+}

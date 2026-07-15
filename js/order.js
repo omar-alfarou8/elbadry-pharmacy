@@ -21,7 +21,19 @@ const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 const imagePreview = document.getElementById('imagePreview');
 const removeImageBtn = document.getElementById('removeImageBtn');
 
+// Cropper elements
+const cropModal = document.getElementById('cropModal');
+const closeCropModalBtn = document.getElementById('closeCropModalBtn');
+const cropperImage = document.getElementById('cropperImage');
+const rotateLeftBtn = document.getElementById('rotateLeftBtn');
+const rotateRightBtn = document.getElementById('rotateRightBtn');
+const saveCropBtn = document.getElementById('saveCropBtn');
+const cancelCropBtn = document.getElementById('cancelCropBtn');
+const editImageBtn = document.getElementById('editImageBtn');
+
 let selectedImageFile = null;
+let originalImageFile = null;
+let cropperInstance = null;
 
 // Modal Logic
 if (uploadPrescriptionBtn && uploadSourceModal) {
@@ -63,6 +75,119 @@ if (uploadPrescriptionBtn && uploadSourceModal) {
     });
 }
 
+// Cropper Modal Logic
+const closeCropModal = () => {
+    if (cropModal) cropModal.classList.add('hidden');
+    if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+    }
+    if (cropperImage) cropperImage.src = '';
+};
+
+if (closeCropModalBtn) closeCropModalBtn.addEventListener('click', closeCropModal);
+if (cancelCropBtn) cancelCropBtn.addEventListener('click', closeCropModal);
+
+if (cropModal) {
+    cropModal.addEventListener('click', (e) => {
+        if (e.target === cropModal) {
+            closeCropModal();
+        }
+    });
+}
+
+// Rotation controls
+if (rotateLeftBtn) {
+    rotateLeftBtn.addEventListener('click', () => {
+        if (cropperInstance) {
+            cropperInstance.rotate(-90);
+        }
+    });
+}
+
+if (rotateRightBtn) {
+    rotateRightBtn.addEventListener('click', () => {
+        if (cropperInstance) {
+            cropperInstance.rotate(90);
+        }
+    });
+}
+
+// Save Crop logic
+if (saveCropBtn) {
+    saveCropBtn.addEventListener('click', () => {
+        if (cropperInstance) {
+            const canvas = cropperInstance.getCroppedCanvas({
+                maxWidth: 2048,
+                maxHeight: 2048,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            
+            if (canvas) {
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        // Create a file object from blob
+                        selectedImageFile = new File([blob], originalImageFile.name, {
+                            type: originalImageFile.type || 'image/jpeg'
+                        });
+                        
+                        // Show preview
+                        const previewUrl = URL.createObjectURL(blob);
+                        imagePreview.src = previewUrl;
+                        imagePreviewContainer.style.display = 'flex';
+                        
+                        closeCropModal();
+                    } else {
+                        alert('حدث خطأ أثناء معالجة الصورة.');
+                    }
+                }, originalImageFile.type || 'image/jpeg', 0.85);
+            } else {
+                alert('حدث خطأ أثناء استخراج الصورة.');
+            }
+        }
+    });
+}
+
+// Edit limits button
+if (editImageBtn) {
+    editImageBtn.addEventListener('click', () => {
+        if (originalImageFile) {
+            openCropper(originalImageFile);
+        }
+    });
+}
+
+// Open cropper with file
+function openCropper(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        cropperImage.src = e.target.result;
+        cropModal.classList.remove('hidden');
+        
+        if (cropperInstance) {
+            cropperInstance.destroy();
+        }
+        
+        cropperInstance = new Cropper(cropperImage, {
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.9,
+            responsive: true,
+            restore: true,
+            checkCrossOrigin: false,
+            checkOrientation: true,
+            rotatable: true,
+            scalable: false,
+            zoomable: true,
+            zoomOnTouch: true,
+            zoomOnWheel: true,
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
 // File Selection Logic
 function handleFileSelection(file) {
     if (file) {
@@ -70,13 +195,8 @@ function handleFileSelection(file) {
             alert('يرجى اختيار ملف صورة صالح.');
             return;
         }
-        selectedImageFile = file;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            imagePreview.src = e.target.result;
-            imagePreviewContainer.style.display = 'flex';
-        }
-        reader.readAsDataURL(file);
+        originalImageFile = file;
+        openCropper(file);
     }
 }
 
@@ -97,6 +217,7 @@ if (removeImageBtn) {
         if (prescriptionGalleryImage) prescriptionGalleryImage.value = '';
         if (prescriptionCameraImage) prescriptionCameraImage.value = '';
         selectedImageFile = null;
+        originalImageFile = null;
         imagePreviewContainer.style.display = 'none';
         imagePreview.src = '';
     });
@@ -257,6 +378,7 @@ orderForm.addEventListener('submit', async (e) => {
         
         // Clear image preview
         selectedImageFile = null;
+        originalImageFile = null;
         if(prescriptionGalleryImage) prescriptionGalleryImage.value = '';
         if(prescriptionCameraImage) prescriptionCameraImage.value = '';
         imagePreviewContainer.style.display = 'none';
