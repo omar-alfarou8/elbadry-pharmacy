@@ -128,7 +128,6 @@ async function loadProductDetails() {
             renderProductDetails(currentProduct);
             loadRelatedProducts(currentProduct.category, currentProduct.id);
         }
-
     } catch (error) {
         console.error("Error loading product details: ", error);
         if (!currentProduct) {
@@ -139,6 +138,9 @@ async function loadProductDetails() {
 
 // Show Error Page
 function showErrorPage(message) {
+    const breadcrumbProductName = document.getElementById('breadcrumbProductName');
+    if (breadcrumbProductName) breadcrumbProductName.textContent = 'خطأ';
+    
     productDetailsContent.innerHTML = `
         <div style="text-align: center; color: var(--error-color); padding: 50px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; min-height: 40vh;">
             <i class="fa-solid fa-circle-exclamation" style="font-size: 55px; color: var(--error-color);"></i>
@@ -151,6 +153,11 @@ function showErrorPage(message) {
 
 // Render Product Details
 function renderProductDetails(prod) {
+    const breadcrumbProductName = document.getElementById('breadcrumbProductName');
+    if (breadcrumbProductName && prod && prod.name) {
+        breadcrumbProductName.textContent = prod.name;
+    }
+
     const pricing = getProductPricing(prod);
     const originalPriceHtml = pricing.hasDiscount ? `${pricing.finalPrice} ج.م` : `${pricing.originalPrice} ج.م`;
 

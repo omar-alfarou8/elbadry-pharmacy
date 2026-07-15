@@ -38,15 +38,18 @@ function getProductPricing(prod) {
 const urlParams = new URLSearchParams(window.location.search);
 const categoryName = urlParams.get('name') ? decodeURIComponent(urlParams.get('name')).trim() : '';
 
-// Update titles
+// Update titles and breadcrumbs
+const breadcrumbCategoryName = document.getElementById('breadcrumbCategoryName');
 if (categoryName) {
     document.title = `${categoryName} - صيدلية البدري`;
     if (categoryPageTitle) categoryPageTitle.textContent = categoryName;
     const categorySectionTitle = document.getElementById('categorySectionTitle');
     if (categorySectionTitle) categorySectionTitle.textContent = categoryName;
+    if (breadcrumbCategoryName) breadcrumbCategoryName.textContent = categoryName;
 } else {
     document.title = `القسم - صيدلية البدري`;
     if (categoryPageTitle) categoryPageTitle.textContent = 'القسم غير محدد';
+    if (breadcrumbCategoryName) breadcrumbCategoryName.textContent = 'القسم غير محدد';
 }
 
 // Delivery fees state
