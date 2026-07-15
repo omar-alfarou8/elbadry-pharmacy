@@ -64,21 +64,32 @@
     <!-- Main Content -->
     <main class="container" style="min-height: 50vh;">
 
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-container" aria-label="Breadcrumb">
+            <ul class="breadcrumb">
+                <li><a href="/"><i class="fa-solid fa-house"></i> الرئيسية</a></li>
+                <li class="separator"><i class="fa-solid fa-chevron-left"></i></li>
+                <li class="active">المتجر</li>
+            </ul>
+        </nav>
+
         <!-- Search Bar -->
-        <div style="margin-bottom: 25px; margin-top: 30px; display: flex; justify-content: flex-start;">
-            <div style="position: relative; width: 100%; max-width: 400px;">
+        <div style="margin-bottom: 35px; margin-top: 20px; display: flex; justify-content: center;">
+            <div style="position: relative; width: 100%; max-width: 600px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; width: 100%;">
                 <input type="text" id="storeSearchInput" placeholder="ابحث عن دواء أو منتج..."
-                    style="width: 100%; padding: 15px 45px 15px 15px; border-radius: 12px; border: 2px solid var(--border-color); font-family: inherit; font-size: 16px; transition: all 0.3s; outline: none;">
-                <i class="fa-solid fa-search"
-                    style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray); font-size: 18px;"></i>
+                    style="width: 100%; padding: 16px 50px 16px 20px; border-radius: 12px; border: 2px solid var(--border-color); font-family: inherit; font-size: 16px; transition: all 0.3s; outline: none; box-sizing: border-box;">
+                <i class="fa-solid fa-magnifying-glass"
+                    style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--primary-color); font-size: 18px;"></i>
             </div>
         </div>
 
         <!-- Categories Section -->
         <div class="store-categories-section">
             <h2 class="categories-title">تصفح الأقسام الرئيسية</h2>
-            <div class="categories-grid" id="categoriesGrid">
-                <!-- Dynamic premium category cards go here -->
+            <div class="categories-scroll-container">
+                <div class="categories-grid" id="categoriesGrid">
+                    <!-- Dynamic premium category cards go here -->
+                </div>
             </div>
         </div>
 

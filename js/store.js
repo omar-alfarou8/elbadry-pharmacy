@@ -59,7 +59,7 @@ let cart = JSON.parse(localStorage.getItem('elbadry_cart')) || [];
 let allProducts = [];
 let filteredProducts = [];
 let displayedCount = 0;
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 24;
 
 // Load products with Stale-While-Revalidate caching pattern
 async function loadProducts() {
@@ -358,7 +358,21 @@ function renderCategoriesUI(categories) {
         `;
         categoriesGrid.appendChild(card);
     });
+
+    updateCategoriesScrollStatus();
 }
+
+function updateCategoriesScrollStatus() {
+    const container = document.querySelector('.categories-scroll-container');
+    if (container && categoriesGrid) {
+        if (categoriesGrid.scrollWidth > categoriesGrid.clientWidth) {
+            container.classList.add('has-overflow');
+        } else {
+            container.classList.remove('has-overflow');
+        }
+    }
+}
+window.addEventListener('resize', updateCategoriesScrollStatus);
 
 // Search Logic with Instant Filter and Normalization
 const storeSearchInput = document.getElementById('storeSearchInput');

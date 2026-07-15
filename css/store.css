@@ -198,9 +198,51 @@
     }
 }
 
+/* Breadcrumb Styling */
+.breadcrumb-container {
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-gray);
+}
+
+.breadcrumb a {
+    color: var(--text-gray);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+}
+
+.breadcrumb a:hover {
+    color: var(--primary-color);
+}
+
+.breadcrumb .separator {
+    color: #a0aec0;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb .active {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
 /* Premium Categories Section */
 .store-categories-section {
-    margin-top: 40px;
+    margin-top: 30px;
     margin-bottom: 40px;
     text-align: center;
 }
@@ -209,7 +251,7 @@
     font-size: 24px;
     font-weight: 800;
     color: var(--secondary-color);
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     position: relative;
     display: inline-block;
     padding-bottom: 8px;
@@ -227,13 +269,61 @@
     border-radius: 3px;
 }
 
+.categories-scroll-container {
+    position: relative;
+    width: 100%;
+}
+
+/* Horizontal scroll fade effect at the edges */
+.categories-scroll-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 50px;
+    background: linear-gradient(to right, var(--white), transparent);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.categories-scroll-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 50px;
+    background: linear-gradient(to left, var(--white), transparent);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Enable fade gradients on scroll or when content overflows */
+.categories-scroll-container.has-overflow::after,
+.categories-scroll-container.has-overflow::before {
+    opacity: 1;
+}
+
 .categories-grid {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
     gap: 20px;
-    flex-wrap: wrap;
-    padding: 10px 0;
+    overflow-x: auto;
+    padding: 15px 10px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    -ms-overflow-style: none;  /* Hide scrollbar for IE */
+}
+
+.categories-grid::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari/Opera */
 }
 
 .category-card {
@@ -244,6 +334,7 @@
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     width: 120px;
+    flex-shrink: 0; /* Prevent shrinking in horizontal strip */
     text-decoration: none;
     color: inherit;
 }
