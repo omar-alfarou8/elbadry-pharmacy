@@ -188,7 +188,8 @@ function loadMoreProducts() {
                </h3>`
             : `<h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${fullNameTitle}</h3>`;
 
-        const slugName = (prod.name || prod.nameEn || 'product').toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
+        const rawSlug = (prod.name && prod.nameEn) ? `${prod.name}-${prod.nameEn}` : (prod.name || prod.nameEn || 'product');
+        const slugName = rawSlug.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
         const prodUrl = `/product?id=${prod.id}&name=${encodeURIComponent(slugName)}`;
 
         const div = document.createElement('div');
