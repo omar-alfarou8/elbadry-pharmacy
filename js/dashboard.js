@@ -145,7 +145,15 @@ productForm.addEventListener('submit', async (e) => {
     saveBtn.disabled = true;
 
     const id = document.getElementById('productId').value;
-    const name = document.getElementById('productName').value;
+    const name = (document.getElementById('productName').value || '').trim();
+    const nameEn = (document.getElementById('productNameEn').value || '').trim();
+    
+    if (!name && !nameEn) {
+        alert('يرجى كتابة اسم للمنتج (بالعربية أو الإنجليزية على الأقل).');
+        saveBtn.innerHTML = 'حفظ المنتج';
+        saveBtn.disabled = false;
+        return;
+    }
     const price = document.getElementById('productPrice').value;
     
     // Read checked categories
@@ -186,6 +194,7 @@ productForm.addEventListener('submit', async (e) => {
 
         const productData = {
             name,
+            nameEn,
             price: Number(price),
             discount: Number(discount) || 0,
             category,
@@ -252,6 +261,9 @@ window.editProduct = function (id) {
 
     document.getElementById('productId').value = id;
     document.getElementById('productName').value = prod.name || '';
+    if (document.getElementById('productNameEn')) {
+        document.getElementById('productNameEn').value = prod.nameEn || '';
+    }
     document.getElementById('productPrice').value = prod.price || '';
     
     // Set discount input field
@@ -656,9 +668,11 @@ async function loadProductsPage(page = 1) {
                     .toLowerCase();
             };
             const normalizedSearch = normalizeArabic(searchLower);
-            filteredProducts = filteredProducts.filter(p => 
-                p.name && normalizeArabic(p.name).includes(normalizedSearch)
-            );
+            filteredProducts = filteredProducts.filter(p => {
+                const matchAr = p.name && normalizeArabic(p.name).includes(normalizedSearch);
+                const matchEn = p.nameEn && p.nameEn.toLowerCase().includes(searchLower);
+                return matchAr || matchEn;
+            });
         }
 
         const totalCount = filteredProducts.length;
@@ -718,9 +732,19 @@ function renderProductsList(products) {
 
         const tr = document.createElement('tr');
         const imgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
+        
+        const displayNameAr = prod.name ? escapeHTML(prod.name) : '';
+        const displayNameEn = prod.nameEn ? escapeHTML(prod.nameEn) : '';
+        let nameCellContent = '';
+        if (displayNameAr && displayNameEn) {
+            nameCellContent = `<div style="font-weight: bold; font-family: inherit;">${displayNameAr}</div><div style="font-weight: 500; color: var(--text-gray); font-size: 13px; font-family: inherit; margin-top: 2px;">${displayNameEn}</div>`;
+        } else {
+            nameCellContent = `<div style="font-weight: bold; font-family: inherit;">${displayNameAr || displayNameEn}</div>`;
+        }
+
         tr.innerHTML = `
             <td><img src="${imgUrl}" width="50" height="50" style="border-radius:8px; object-fit:cover;"></td>
-            <td><strong>${escapeHTML(prod.name)}</strong></td>
+            <td>${nameCellContent}</td>
             <td>${escapeHTML(categoryText)}</td>
             <td>${priceHtml}</td>
             <td>${stockLimitHtml}</td>
