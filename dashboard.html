@@ -319,9 +319,15 @@
             </div>
             <form id="productForm">
                 <input type="hidden" id="productId">
-                <div class="input-group">
-                    <label>اسم المنتج <span class="required">*</span></label>
-                    <input type="text" id="productName" required>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>اسم المنتج (بالعربية)</label>
+                        <input type="text" id="productName" placeholder="مثال: بنادول إكسترا">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>اسم المنتج (بالإنجليزية)</label>
+                        <input type="text" id="productNameEn" placeholder="مثال: Panadol Extra">
+                    </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">

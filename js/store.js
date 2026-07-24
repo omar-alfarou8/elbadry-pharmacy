@@ -144,7 +144,11 @@ function applyFilters() {
                 .toLowerCase();
         };
         const normalizedSearch = normalizeArabic(searchLower);
-        filtered = filtered.filter(p => p.name && normalizeArabic(p.name).includes(normalizedSearch));
+        filtered = filtered.filter(p => {
+            const matchAr = p.name && normalizeArabic(p.name).includes(normalizedSearch);
+            const matchEn = p.nameEn && p.nameEn.toLowerCase().includes(searchLower);
+            return matchAr || matchEn;
+        });
     }
 
     filteredProducts = filtered;
@@ -174,22 +178,35 @@ function loadMoreProducts() {
 
         const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
 
+        const nameAr = prod.name ? escapeHTML(prod.name) : '';
+        const nameEn = prod.nameEn ? escapeHTML(prod.nameEn) : '';
+        const fullNameTitle = nameAr && nameEn ? `${nameAr} - ${nameEn}` : (nameAr || nameEn);
+        const nameDisplayHtml = nameAr && nameEn 
+            ? `<h3 class="product-name" style="transition: color 0.3s ease; line-height: 1.3;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">
+                <div>${nameAr}</div>
+                <div style="font-size: 13px; color: var(--text-gray); font-weight: 500; margin-top: 3px;">${nameEn}</div>
+               </h3>`
+            : `<h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${fullNameTitle}</h3>`;
+
+        const slugName = (prod.name || prod.nameEn || 'product').toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
+        const prodUrl = `/product?id=${prod.id}&name=${encodeURIComponent(slugName)}`;
+
         const div = document.createElement('div');
         div.className = 'product-card';
         div.style.animation = 'fadeIn 0.5s ease forwards';
         const storeImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
         div.innerHTML = `
             ${badgeHtml}
-            <a href="/product?id=${prod.id}" style="display: block; overflow: hidden;">
-                <img src="${storeImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+            <a href="${prodUrl}" style="display: block; overflow: hidden;">
+                <img src="${storeImgUrl}" alt="${escapeHTML(fullNameTitle)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
             </a>
             <div class="product-info">
                 <div class="product-category">${escapeHTML(categoryText)}</div>
-                <a href="/product?id=${prod.id}" style="color: inherit; text-decoration: none;">
-                    <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
+                <a href="${prodUrl}" style="color: inherit; text-decoration: none;">
+                    ${nameDisplayHtml}
                 </a>
                 <div class="product-price">${priceHtml}</div>
-                <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${storeImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
+                <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(fullNameTitle)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${storeImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
                 </div>
             </div>
         `;

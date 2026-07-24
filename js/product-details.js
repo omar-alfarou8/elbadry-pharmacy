@@ -153,9 +153,13 @@ function showErrorPage(message) {
 
 // Render Product Details
 function renderProductDetails(prod) {
+    const nameAr = prod.name ? escapeHTML(prod.name) : '';
+    const nameEn = prod.nameEn ? escapeHTML(prod.nameEn) : '';
+    const fullNameTitle = nameAr && nameEn ? `${nameAr} - ${nameEn}` : (nameAr || nameEn);
+
     const breadcrumbProductName = document.getElementById('breadcrumbProductName');
-    if (breadcrumbProductName && prod && prod.name) {
-        breadcrumbProductName.textContent = prod.name;
+    if (breadcrumbProductName) {
+        breadcrumbProductName.textContent = fullNameTitle;
     }
 
     const pricing = getProductPricing(prod);
@@ -173,6 +177,56 @@ function renderProductDetails(prod) {
 
     const detailsImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
     const isOutOfStock = prod.stock !== undefined && prod.stock !== null && prod.stock !== '' && Number(prod.stock) <= 0;
+
+    // --- SEO Optimization & Search Engines Integration ---
+    document.title = `${fullNameTitle} | صيدلية البدري`;
+    
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.name = 'description';
+        document.head.appendChild(metaDesc);
+    }
+    const pageDesc = prod.description ? prod.description.substring(0, 160) : `اشتري ${fullNameTitle} أونلاين بأفضل سعر من صيدلية البدري. توصيل سريع ودواء أصلية.`;
+    metaDesc.content = pageDesc;
+
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+    }
+    ogTitle.content = `${fullNameTitle} - صيدلية البدري`;
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+        ogDesc = document.createElement('meta');
+        ogDesc.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDesc);
+    }
+    ogDesc.content = pageDesc;
+
+    // Schema.org JSON-LD Structured Data for Google Rich Snippets
+    let schemaScript = document.getElementById('productSchemaJson');
+    if (!schemaScript) {
+        schemaScript = document.createElement('script');
+        schemaScript.id = 'productSchemaJson';
+        schemaScript.type = 'application/ld+json';
+        document.head.appendChild(schemaScript);
+    }
+    schemaScript.textContent = JSON.stringify({
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": fullNameTitle,
+        "image": [detailsImgUrl],
+        "description": pageDesc,
+        "offers": {
+            "@type": "Offer",
+            "priceCurrency": "EGP",
+            "price": pricing.finalPrice,
+            "availability": isOutOfStock ? "https://schema.org/OutOfStock" : "https://schema.org/InStock"
+        }
+    });
 
     let stockStatusHtml = '';
     if (prod.stock !== undefined && prod.stock !== null && prod.stock !== '') {
@@ -221,12 +275,16 @@ function renderProductDetails(prod) {
         `;
     }
 
+    const detailsTitleHtml = nameAr && nameEn 
+        ? `<h1 class="details-title" style="margin-bottom: 5px;">${nameAr}</h1><div style="font-size: 20px; font-weight: 600; color: var(--text-gray); margin-bottom: 20px; font-family: inherit;">${nameEn}</div>`
+        : `<h1 class="details-title">${fullNameTitle}</h1>`;
+
     productDetailsContent.innerHTML = `
         <div class="details-grid">
             <!-- Right Column: Image and Action Card -->
             <div class="details-image-sec">
                 <div class="glass-card image-card">
-                    <img src="${detailsImgUrl}" alt="${escapeHTML(prod.name)}" class="main-prod-img" id="mainProdImg">
+                    <img src="${detailsImgUrl}" alt="${escapeHTML(fullNameTitle)}" class="main-prod-img" id="mainProdImg">
                 </div>
                 
                 <div class="glass-card cart-action-card" style="margin-top: 25px; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
@@ -249,7 +307,7 @@ function renderProductDetails(prod) {
             <!-- Left Column: Detailed Info -->
             <div class="details-info-sec">
                 <div class="details-category-badge">${escapeHTML(categoryText)}</div>
-                <h1 class="details-title">${escapeHTML(prod.name)}</h1>
+                ${detailsTitleHtml}
                 ${priceBadgeHtml}
                 
                 <!-- Tabs Container -->
@@ -370,6 +428,19 @@ async function loadRelatedProducts(category, currentId) {
 
                 const categoryText = Array.isArray(prod.category) ? prod.category.join('، ') : (prod.category || 'غير محدد');
 
+                const nameAr = prod.name ? escapeHTML(prod.name) : '';
+                const nameEn = prod.nameEn ? escapeHTML(prod.nameEn) : '';
+                const fullNameTitle = nameAr && nameEn ? `${nameAr} - ${nameEn}` : (nameAr || nameEn);
+                const nameDisplayHtml = nameAr && nameEn 
+                    ? `<h3 class="product-name" style="transition: color 0.3s ease; line-height: 1.3;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">
+                        <div>${nameAr}</div>
+                        <div style="font-size: 13px; color: var(--text-gray); font-weight: 500; margin-top: 3px;">${nameEn}</div>
+                       </h3>`
+                    : `<h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${fullNameTitle}</h3>`;
+
+                const slugName = (prod.name || prod.nameEn || 'product').toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
+                const prodUrl = `/product?id=${prod.id}&name=${encodeURIComponent(slugName)}`;
+
                 const div = document.createElement('div');
                 div.className = 'product-card';
                 div.style.animation = 'fadeIn 0.5s ease forwards';
@@ -377,16 +448,16 @@ async function loadRelatedProducts(category, currentId) {
                 const relatedImgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
                 div.innerHTML = `
                     ${badgeHtml}
-                    <a href="/product?id=${prod.id}" style="display: block; overflow: hidden;">
-                        <img src="${relatedImgUrl}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
+                    <a href="${prodUrl}" style="display: block; overflow: hidden;">
+                        <img src="${relatedImgUrl}" alt="${escapeHTML(fullNameTitle)}" class="product-img" loading="lazy" style="transition: transform 0.5s ease;">
                     </a>
                     <div class="product-info">
                         <div class="product-category">${escapeHTML(categoryText)}</div>
-                        <a href="/product?id=${prod.id}" style="color: inherit; text-decoration: none;">
-                            <h3 class="product-name" style="transition: color 0.3s ease;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--secondary-color)'">${escapeHTML(prod.name)}</h3>
+                        <a href="${prodUrl}" style="color: inherit; text-decoration: none;">
+                            ${nameDisplayHtml}
                         </a>
                         <div class="product-price">${priceHtml}</div>
-                        <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(prod.name)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
+                        <div id="product-action-${prod.id}" class="product-action-container" data-name="${escapeHTML(fullNameTitle)}" data-price="${pricing.finalPrice}" data-original-price="${pricing.originalPrice}" data-discount-percent="${pricing.discountPercent}" data-img="${relatedImgUrl}" data-stock="${prod.stock !== undefined && prod.stock !== null ? prod.stock : ''}" data-limit="${prod.maxLimit !== undefined && prod.maxLimit !== null ? prod.maxLimit : ''}">
                         </div>
                     </div>
                 `;
