@@ -192,9 +192,13 @@ productForm.addEventListener('submit', async (e) => {
             image = await getDownloadURL(snapshot.ref);
         }
 
+        const rawSlug = nameEn || name || 'product';
+        const slug = rawSlug.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
+
         const productData = {
             name,
             nameEn,
+            slug,
             price: Number(price),
             discount: Number(discount) || 0,
             category,

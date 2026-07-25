@@ -1,5 +1,5 @@
 import { db, escapeHTML } from './firebase-config.js';
-import { collection, query, getDocs, getDoc, addDoc, onSnapshot, doc, limit } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { collection, query, getDocs, getDoc, addDoc, onSnapshot, doc, limit, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
 const relatedProductsSection = document.getElementById('relatedProductsSection');
 const productsGrid = document.getElementById('productsGrid');
@@ -138,13 +138,22 @@ async function loadProductDetails() {
         }
 
         if (!freshProduct && productNameParam) {
-            const prodsSnap = await getDocs(collection(db, "products"));
-            prodsSnap.forEach(docSnap => {
-                const p = { id: docSnap.id, ...docSnap.data() };
-                if (isProductMatch(p, productId, productNameParam)) {
-                    freshProduct = p;
-                }
-            });
+            const cleanParam = decodeURIComponent(productNameParam).toLowerCase().trim();
+            const slugQuery = query(collection(db, "products"), where("slug", "==", cleanParam), limit(1));
+            const slugSnap = await getDocs(slugQuery);
+            if (!slugSnap.empty) {
+                const matchedDoc = slugSnap.docs[0];
+                freshProduct = { id: matchedDoc.id, ...matchedDoc.data() };
+            } else {
+                // Fallback for legacy products before slug field was introduced
+                const prodsSnap = await getDocs(collection(db, "products"));
+                prodsSnap.forEach(docSnap => {
+                    const p = { id: docSnap.id, ...docSnap.data() };
+                    if (isProductMatch(p, productId, productNameParam)) {
+                        freshProduct = p;
+                    }
+                });
+            }
         }
 
         if (!freshProduct && !currentProduct) {
