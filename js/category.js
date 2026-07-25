@@ -234,7 +234,7 @@ function loadMoreProducts() {
 
         const rawSlug = prod.nameEn || prod.name || 'product';
         const slugName = rawSlug.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
-        const prodUrl = `/product?id=${prod.id}&name=${encodeURIComponent(slugName)}`;
+        const prodUrl = `/product?name=${encodeURIComponent(slugName)}`;
 
         const div = document.createElement('div');
         div.className = 'product-card';

@@ -65,9 +65,29 @@ let currentProduct = null;
 let selectedQty = 1;
 
 // Load Product Details with SWR caching & parallel query execution
+function isProductMatch(p, idParam, nameParam) {
+    if (idParam && p.id === idParam) return true;
+    if (!nameParam) return false;
+
+    const normParam = decodeURIComponent(nameParam).toLowerCase().trim();
+    const slugEn = p.nameEn ? p.nameEn.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-') : '';
+    const slugAr = p.name ? p.name.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-') : '';
+    
+    return p.id === normParam || 
+           slugEn === normParam || 
+           slugAr === normParam || 
+           (p.nameEn && p.nameEn.toLowerCase().trim() === normParam) ||
+           (p.name && p.name.toLowerCase().trim() === normParam);
+}
+
+// Load Product Details with SWR caching & parallel query execution
 async function loadProductDetails() {
-    if (!productId) {
-        showErrorPage('معرف المنتج غير موجود!');
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('id');
+    const productNameParam = urlParams.get('name');
+
+    if (!productId && !productNameParam) {
+        showErrorPage('معرف أو اسم المنتج غير موجود!');
         return;
     }
 
@@ -84,7 +104,7 @@ async function loadProductDetails() {
         const storedProds = localStorage.getItem('elbadry_products_cache');
         if (storedProds) {
             const cachedProds = JSON.parse(storedProds);
-            const cachedProductFound = cachedProds.find(p => p.id === productId);
+            const cachedProductFound = cachedProds.find(p => isProductMatch(p, productId, productNameParam));
             if (cachedProductFound) {
                 currentProduct = cachedProductFound;
                 renderProductDetails(currentProduct);
@@ -96,12 +116,8 @@ async function loadProductDetails() {
     }
 
     try {
-        // 2. Fetch categories and product details in parallel to eliminate waterfall latency
-        const [categoriesSnapshot, docSnap] = await Promise.all([
-            getDocs(collection(db, "categories")),
-            getDoc(doc(db, "products", productId))
-        ]);
-
+        // 2. Fetch categories and product details from Firestore
+        const categoriesSnapshot = await getDocs(collection(db, "categories"));
         categoryDiscounts = {};
         const freshCats = [];
         categoriesSnapshot.forEach(docSnap => {
@@ -113,17 +129,30 @@ async function loadProductDetails() {
             localStorage.setItem('elbadry_categories_cache', JSON.stringify(freshCats));
         } catch (e) {}
 
-        if (!docSnap.exists()) {
-            if (!currentProduct) {
-                showErrorPage('عذراً، لم نتمكن من العثور على هذا المنتج. قد يكون تم حذفه أو نقله.');
+        let freshProduct = null;
+        if (productId) {
+            const docSnap = await getDoc(doc(db, "products", productId));
+            if (docSnap.exists()) {
+                freshProduct = { id: docSnap.id, ...docSnap.data() };
             }
+        }
+
+        if (!freshProduct && productNameParam) {
+            const prodsSnap = await getDocs(collection(db, "products"));
+            prodsSnap.forEach(docSnap => {
+                const p = { id: docSnap.id, ...docSnap.data() };
+                if (isProductMatch(p, productId, productNameParam)) {
+                    freshProduct = p;
+                }
+            });
+        }
+
+        if (!freshProduct && !currentProduct) {
+            showErrorPage('عذراً، لم نتمكن من العثور على هذا المنتج. قد يكون تم حذفه أو نقله.');
             return;
         }
 
-        const freshProduct = { id: docSnap.id, ...docSnap.data() };
-        
-        // 3. Update UI if data changed or cache was empty
-        if (JSON.stringify(freshProduct) !== JSON.stringify(currentProduct)) {
+        if (freshProduct && JSON.stringify(freshProduct) !== JSON.stringify(currentProduct)) {
             currentProduct = freshProduct;
             renderProductDetails(currentProduct);
             loadRelatedProducts(currentProduct.category, currentProduct.id);
@@ -440,7 +469,7 @@ async function loadRelatedProducts(category, currentId) {
 
                 const rawSlug = prod.nameEn || prod.name || 'product';
                 const slugName = rawSlug.toLowerCase().replace(/[^\w\u0600-\u06FF\s-]/g, '').trim().replace(/\s+/g, '-');
-                const prodUrl = `/product?id=${prod.id}&name=${encodeURIComponent(slugName)}`;
+                const prodUrl = `/product?name=${encodeURIComponent(slugName)}`;
 
                 const div = document.createElement('div');
                 div.className = 'product-card';
