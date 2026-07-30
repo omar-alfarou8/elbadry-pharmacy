@@ -391,8 +391,10 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
+                                    <th>تاريخ الحجز</th>
                                     <th>العميل والهاتف</th>
                                     <th>العنوان</th>
+                                    <th>شركة / مصدر الدواء</th>
                                     <th>تفاصيل الطلب</th>
                                     <th>سعر الطلب</th>
                                     <th>المحصل</th>
@@ -403,7 +405,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="9" style="text-align: center;">جاري تحميل الحجوزات...</td>
+                                    <td colspan="11" style="text-align: center;">جاري تحميل الحجوزات...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -622,9 +624,21 @@
                         <input type="tel" id="resCustomerPhone" required placeholder="مثال: 01012345678" style="direction: ltr; text-align: right;">
                     </div>
                 </div>
-                <div class="input-group">
-                    <label>عنوان العميل <span class="required">*</span></label>
-                    <input type="text" id="resCustomerAddress" required placeholder="مثال: شارع التحرير - شقة 4 - القاهرة">
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>عنوان العميل <span class="required">*</span></label>
+                        <input type="text" id="resCustomerAddress" required placeholder="مثال: شارع التحرير - القاهرة">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>شركة / مصدر الدواء <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <input type="text" id="resBranch" list="branchesList" placeholder="مثال: الشركة المتحدة، ابن سينا، فارما أوفرسيز...">
+                        <datalist id="branchesList">
+                            <option value="الشركة المتحدة للدواء"></option>
+                            <option value="ابن سينا فارما"></option>
+                            <option value="فارما أوفرسيز"></option>
+                            <option value="مالتي فارما"></option>
+                        </datalist>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>تفاصيل / بيانات الطلب والأدوية <span class="required">*</span></label>

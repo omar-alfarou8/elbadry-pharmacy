@@ -1249,6 +1249,7 @@ const resIdInput = document.getElementById('reservationId');
 const resCustomerNameInput = document.getElementById('resCustomerName');
 const resCustomerPhoneInput = document.getElementById('resCustomerPhone');
 const resCustomerAddressInput = document.getElementById('resCustomerAddress');
+const resBranchInput = document.getElementById('resBranch');
 const resOrderDetailsInput = document.getElementById('resOrderDetails');
 const resTotalPriceInput = document.getElementById('resTotalPrice');
 const resPaidAmountInput = document.getElementById('resPaidAmount');
@@ -1267,6 +1268,34 @@ const waCustomerPhoneDisplay = document.getElementById('waCustomerPhoneDisplay')
 const waMessageText = document.getElementById('waMessageText');
 const sendWaBtn = document.getElementById('sendWaBtn');
 
+// Helper to format creation date cleanly
+function formatReservationDate(dateVal) {
+    if (!dateVal) return '<span style="color:var(--text-gray);">-</span>';
+    let dateObj;
+    if (dateVal.toDate && typeof dateVal.toDate === 'function') {
+        dateObj = dateVal.toDate();
+    } else if (typeof dateVal === 'object' && dateVal.seconds) {
+        dateObj = new Date(dateVal.seconds * 1000);
+    } else {
+        dateObj = new Date(dateVal);
+    }
+    
+    if (isNaN(dateObj.getTime())) return '<span style="color:var(--text-gray);">-</span>';
+
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const year = dateObj.getFullYear();
+    
+    let hours = dateObj.getHours();
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
+
+    return `<div style="font-weight:600; font-size:13px; color:#1e293b;">${year}/${month}/${day}</div><div style="font-size:11px; color:var(--text-gray); font-family:monospace; margin-top:2px;" dir="ltr">${timeStr}</div>`;
+}
+
 // Auto-calculate remaining amount
 function updateRemaining() {
     if (!resTotalPriceInput || !resPaidAmountInput || !resRemainingAmountInput) return;
@@ -1284,6 +1313,7 @@ if (openAddReservationModalBtn) {
     openAddReservationModalBtn.addEventListener('click', () => {
         if (reservationFormEl) reservationFormEl.reset();
         if (resIdInput) resIdInput.value = '';
+        if (resBranchInput) resBranchInput.value = '';
         if (resRemainingAmountInput) resRemainingAmountInput.value = '0.00';
         const modalTitle = document.getElementById('resModalTitle');
         if (modalTitle) modalTitle.textContent = 'إضافة حجز دواء جديد';
@@ -1357,7 +1387,9 @@ function renderReservations() {
         const matchesSearch = !searchVal ||
             (res.customerName && res.customerName.toLowerCase().includes(searchVal)) ||
             (res.customerPhone && res.customerPhone.includes(searchVal)) ||
-            (res.orderDetails && res.orderDetails.toLowerCase().includes(searchVal));
+            (res.orderDetails && res.orderDetails.toLowerCase().includes(searchVal)) ||
+            (res.branch && res.branch.toLowerCase().includes(searchVal)) ||
+            (res.sourceLocation && res.sourceLocation.toLowerCase().includes(searchVal));
         const matchesStatus = !statusVal || res.status === statusVal;
         return matchesSearch && matchesStatus;
     });
@@ -1365,7 +1397,7 @@ function renderReservations() {
     reservationsTableBody.innerHTML = '';
 
     if (filtered.length === 0) {
-        reservationsTableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-gray);">لا توجد حجوزات مطابقة.</td></tr>`;
+        reservationsTableBody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:30px; color:var(--text-gray);">لا توجد حجوزات مطابقة.</td></tr>`;
         return;
     }
 
@@ -1380,13 +1412,21 @@ function renderReservations() {
         if (res.status === 'مكتمل') statusClass = 'status-completed';
         else if (res.status === 'ملغي') statusClass = 'status-cancelled';
 
+        const branchName = res.branch || res.sourceLocation || '';
+        const createdDateHtml = formatReservationDate(res.createdAt || res.updatedAt);
+        const branchBadgeHtml = branchName 
+            ? `<span style="display:inline-block; background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.2); padding: 4px 10px; border-radius: 20px; font-weight:600; font-size:12px;"><i class="fa-solid fa-building" style="margin-left:4px;"></i>${escapeHTML(branchName)}</span>`
+            : `<span style="color:var(--text-gray); font-size:13px;">-</span>`;
+
         tr.innerHTML = `
             <td><strong>${index + 1}</strong></td>
+            <td style="white-space: nowrap;">${createdDateHtml}</td>
             <td>
                 <div style="font-weight:700;">${escapeHTML(res.customerName || 'بدون اسم')}</div>
                 <div style="font-size:13px; color:var(--text-gray); font-family:monospace;" dir="ltr">${escapeHTML(res.customerPhone || '')}</div>
             </td>
-            <td style="max-width: 150px; font-size:13px;">${escapeHTML(res.customerAddress || '-')}</td>
+            <td style="max-width: 130px; font-size:13px;">${escapeHTML(res.customerAddress || '-')}</td>
+            <td style="max-width: 150px; font-size:13px;">${branchBadgeHtml}</td>
             <td style="max-width: 200px; white-space: pre-wrap; font-size:13px;">${escapeHTML(res.orderDetails || '-')}</td>
             <td><strong>${price.toFixed(2)}</strong> ج.م</td>
             <td style="color:#16a34a;"><strong>${paid.toFixed(2)}</strong> ج.م</td>
@@ -1440,6 +1480,7 @@ if (reservationFormEl) {
         const name = resCustomerNameInput ? resCustomerNameInput.value.trim() : '';
         const phone = resCustomerPhoneInput ? resCustomerPhoneInput.value.trim() : '';
         const address = resCustomerAddressInput ? resCustomerAddressInput.value.trim() : '';
+        const branch = resBranchInput ? resBranchInput.value.trim() : '';
         const details = resOrderDetailsInput ? resOrderDetailsInput.value.trim() : '';
         const totalPrice = parseFloat(resTotalPriceInput ? resTotalPriceInput.value : 0) || 0;
         let paidAmount = parseFloat(resPaidAmountInput ? resPaidAmountInput.value : 0) || 0;
@@ -1456,6 +1497,8 @@ if (reservationFormEl) {
             customerName: name,
             customerPhone: phone,
             customerAddress: address,
+            branch: branch,
+            sourceLocation: branch,
             orderDetails: details,
             totalPrice: totalPrice,
             paidAmount: paidAmount,
@@ -1470,6 +1513,8 @@ if (reservationFormEl) {
 
         try {
             if (id) {
+                const existingRes = allReservations[id];
+                data.createdAt = (existingRes && existingRes.createdAt) ? existingRes.createdAt : new Date().toISOString();
                 await updateDoc(doc(db, 'reservations', id), data);
             } else {
                 data.createdAt = new Date().toISOString();
@@ -1495,6 +1540,7 @@ window.editReservation = function (id) {
     if (resCustomerNameInput) resCustomerNameInput.value = res.customerName || '';
     if (resCustomerPhoneInput) resCustomerPhoneInput.value = res.customerPhone || '';
     if (resCustomerAddressInput) resCustomerAddressInput.value = res.customerAddress || '';
+    if (resBranchInput) resBranchInput.value = res.branch || res.sourceLocation || '';
     if (resOrderDetailsInput) resOrderDetailsInput.value = res.orderDetails || '';
     if (resTotalPriceInput) resTotalPriceInput.value = res.totalPrice || '';
     if (resPaidAmountInput) resPaidAmountInput.value = res.paidAmount || 0;
@@ -1567,7 +1613,7 @@ window.openWaModal = function (id) {
     const pushpin = '\u{1F4CE}';
     const heart = '\u{2764}\u{FE0F}';
 
-    // Draft message template (exact original layout & emojis)
+    // Draft message template (exact original layout & emojis - internal supplier company is NOT included)
     const templateMsg = `أهلاً بك أستاذ/ة ${res.customerName || ''} ${flower}
 من صيدلية البدري ${hospital}
 
