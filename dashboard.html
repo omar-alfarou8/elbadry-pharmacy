@@ -59,6 +59,7 @@
                 <li><a href="#" data-target="orders"><i class="fa-solid fa-cart-arrow-down"></i> الطلبات</a></li>
                 <li><a href="#" data-target="delivery"><i class="fa-solid fa-truck-fast"></i> رسوم التوصيل</a></li>
                 <li><a href="#" data-target="slider"><i class="fa-solid fa-images"></i> السلايدر الإعلاني</a></li>
+                <li><a href="#" data-target="reservations"><i class="fa-solid fa-notes-medical"></i> حجوزات الأدوية</a></li>
                 <li style="margin-top: auto;"><a href="#" id="logoutBtn" style="color: var(--error-color)"><i
                             class="fa-solid fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
@@ -315,6 +316,97 @@
                         </table>
                     </div>
                 </div>
+            <!-- Reservations Section -->
+            <section id="reservations" class="dashboard-section">
+                <!-- Stat Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(11, 128, 122, 0.1); color: var(--primary-color);">
+                            <i class="fa-solid fa-bookmark"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>إجمالي الحجوزات</h3>
+                            <p id="totalReservationsCount">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>توتال التحصيل</h3>
+                            <p id="totalCollectedAmount">0 ج.م</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            <i class="fa-solid fa-scale-unbalanced"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>توتال المتبقي</h3>
+                            <p id="totalRemainingAmount">0 ج.م</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                            <i class="fa-solid fa-coins"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>إجمالي قيمة الحجوزات</h3>
+                            <p id="totalReservationsValue">0 ج.م</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel with Header, Filter, and Table -->
+                <div class="panel">
+                    <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
+                        <h3>قائمة حجوزات الأدوية</h3>
+                        <button class="btn-primary" id="openAddReservationModal" style="border-radius: 10px; padding: 10px 18px;">
+                            <i class="fa-solid fa-plus"></i> إضافة حجز جديد
+                        </button>
+                    </div>
+
+                    <!-- Filter & Search Row -->
+                    <div class="filter-row" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.01); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div style="flex: 1; min-width: 220px; position: relative;">
+                            <input type="text" id="resSearchInput" placeholder="بحث باسم العميل أو رقم التليفون..." style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px; text-align: right;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray);"></i>
+                        </div>
+                        <div style="width: 200px;">
+                            <select id="resStatusFilter" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px;">
+                                <option value="">كل الحالات</option>
+                                <option value="غير مكتمل">غير مكتمل</option>
+                                <option value="مكتمل">مكتمل</option>
+                                <option value="ملغي">ملغي</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div style="overflow-x: auto;">
+                        <table id="reservationsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>العميل والهاتف</th>
+                                    <th>العنوان</th>
+                                    <th>تفاصيل الطلب</th>
+                                    <th>سعر الطلب</th>
+                                    <th>المحصل</th>
+                                    <th>المتبقي</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="9" style="text-align: center;">جاري تحميل الحجوزات...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
         </main>
@@ -506,6 +598,95 @@
             <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto;">
                 <!-- Filled dynamically -->
             </ul>
+        </div>
+    </div>
+
+    <!-- Add/Edit Reservation Modal -->
+    <div class="modal" id="reservationModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3 id="resModalTitle">إضافة حجز دواء جديد</h3>
+                <button class="close-modal" id="closeReservationModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <form id="reservationForm">
+                <input type="hidden" id="reservationId">
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>اسم العميل <span class="required">*</span></label>
+                        <input type="text" id="resCustomerName" required placeholder="مثال: أحمد محمد">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>رقم التليفون <span class="required">*</span></label>
+                        <input type="tel" id="resCustomerPhone" required placeholder="مثال: 01012345678" style="direction: ltr; text-align: right;">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>عنوان العميل <span class="required">*</span></label>
+                    <input type="text" id="resCustomerAddress" required placeholder="مثال: شارع التحرير - شقة 4 - القاهرة">
+                </div>
+                <div class="input-group">
+                    <label>تفاصيل / بيانات الطلب والأدوية <span class="required">*</span></label>
+                    <textarea id="resOrderDetails" rows="3" required placeholder="اكتب اسم الدواء، التركيز، الكمية المطلوبة..." style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 15px;"></textarea>
+                </div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>سعر الطلب الإجمالي (ج.م) <span class="required">*</span></label>
+                        <input type="number" id="resTotalPrice" required step="any" min="0" placeholder="0.00">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>المبلغ المحصل (ج.م) <span class="required">*</span></label>
+                        <input type="number" id="resPaidAmount" required step="any" min="0" placeholder="0.00" value="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>المتبقي (ج.م)</label>
+                        <input type="number" id="resRemainingAmount" readonly placeholder="0.00" style="background: #f8fafc; font-weight: bold; color: #dc2626;">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
+                        <label>حالة الحجز</label>
+                        <select id="resStatus" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit; font-size: 15px;">
+                            <option value="غير مكتمل">غير مكتمل</option>
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="ملغي">ملغي</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>ملاحظات إضافية <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <input type="text" id="resNotes" placeholder="أية ملاحظات خاصة بالحجز...">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;" id="saveReservationBtn">حفظ الحجز</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- WhatsApp Share Modal -->
+    <div class="modal" id="whatsappModal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3><i class="fa-brands fa-whatsapp" style="color: #25D366; margin-left: 8px;"></i> إرسال تفاصيل الحجز عبر واتساب</h3>
+                <button class="close-modal" id="closeWhatsappModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div style="margin-bottom: 15px; padding: 12px; background: rgba(37, 211, 102, 0.08); border-radius: 10px; border: 1px solid rgba(37, 211, 102, 0.2); display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <span style="font-size: 13px; color: var(--text-gray);">إرسال إلى العميل:</span>
+                    <strong id="waCustomerNameDisplay" style="display: block; color: var(--secondary-color); font-size: 15px;">-</strong>
+                </div>
+                <div style="text-align: left; direction: ltr;">
+                    <span id="waCustomerPhoneDisplay" style="font-weight: bold; color: #16a34a; font-size: 15px;">-</span>
+                </div>
+            </div>
+            <div class="input-group">
+                <label style="font-weight: bold; margin-bottom: 8px; display: block;">نص الرسالة (يمكنك تعديله قبل الإرسال):</label>
+                <textarea id="waMessageText" rows="9" style="width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-primary" id="sendWaBtn" style="flex: 2; background: #25D366; border: none; padding: 12px; font-size: 16px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> إرسال عبر واتساب
+                </button>
+                <button class="btn-outline" id="cancelWaBtn" style="flex: 1; padding: 12px; border-radius: 10px;">إلغاء</button>
+            </div>
         </div>
     </div>
 

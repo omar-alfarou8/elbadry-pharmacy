@@ -366,3 +366,58 @@ td {
         font-size: 14px;
     }
 }
+
+/* Reservations Styles */
+.btn-whatsapp {
+    background: rgba(37, 211, 102, 0.12);
+    color: #16a34a;
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+}
+
+.btn-whatsapp:hover {
+    background: #25D366;
+    color: #ffffff;
+    border-color: #25D366;
+    transform: translateY(-1px);
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+}
+
+.status-completed {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+}
+
+.status-cancelled {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.remaining-tag {
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.remaining-has-balance {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.remaining-zero {
+    background: rgba(16, 185, 129, 0.1);
+    color: #16a34a;
+}

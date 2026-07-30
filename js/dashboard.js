@@ -29,6 +29,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 const productsCol = collection(db, 'products');
 const ordersCol = collection(db, 'orders');
 const categoriesCol = collection(db, 'categories');
+const reservationsCol = collection(db, 'reservations');
 
 // Local products cache
 let allProducts = {};
@@ -1227,3 +1228,365 @@ window.deleteSlide = async function(id) {
         }
     }
 };
+
+// ==================== MEDICINE RESERVATIONS MODULE ====================
+let allReservations = {};
+let currentWaReservationId = null;
+
+// DOM Elements
+const totalReservationsCountEl = document.getElementById('totalReservationsCount');
+const totalCollectedAmountEl = document.getElementById('totalCollectedAmount');
+const totalRemainingAmountEl = document.getElementById('totalRemainingAmount');
+const totalReservationsValueEl = document.getElementById('totalReservationsValue');
+const reservationsTableBody = document.querySelector('#reservationsTable tbody');
+
+const openAddReservationModalBtn = document.getElementById('openAddReservationModal');
+const closeReservationModalBtn = document.getElementById('closeReservationModal');
+const reservationModalEl = document.getElementById('reservationModal');
+const reservationFormEl = document.getElementById('reservationForm');
+
+const resIdInput = document.getElementById('reservationId');
+const resCustomerNameInput = document.getElementById('resCustomerName');
+const resCustomerPhoneInput = document.getElementById('resCustomerPhone');
+const resCustomerAddressInput = document.getElementById('resCustomerAddress');
+const resOrderDetailsInput = document.getElementById('resOrderDetails');
+const resTotalPriceInput = document.getElementById('resTotalPrice');
+const resPaidAmountInput = document.getElementById('resPaidAmount');
+const resRemainingAmountInput = document.getElementById('resRemainingAmount');
+const resStatusInput = document.getElementById('resStatus');
+const resNotesInput = document.getElementById('resNotes');
+
+const resSearchInput = document.getElementById('resSearchInput');
+const resStatusFilter = document.getElementById('resStatusFilter');
+
+const whatsappModalEl = document.getElementById('whatsappModal');
+const closeWhatsappModalBtn = document.getElementById('closeWhatsappModal');
+const cancelWaBtn = document.getElementById('cancelWaBtn');
+const waCustomerNameDisplay = document.getElementById('waCustomerNameDisplay');
+const waCustomerPhoneDisplay = document.getElementById('waCustomerPhoneDisplay');
+const waMessageText = document.getElementById('waMessageText');
+const sendWaBtn = document.getElementById('sendWaBtn');
+
+// Auto-calculate remaining amount
+function updateRemaining() {
+    if (!resTotalPriceInput || !resPaidAmountInput || !resRemainingAmountInput) return;
+    const total = parseFloat(resTotalPriceInput.value) || 0;
+    const paid = parseFloat(resPaidAmountInput.value) || 0;
+    const rem = Math.max(0, total - paid);
+    resRemainingAmountInput.value = rem.toFixed(2);
+}
+
+if (resTotalPriceInput) resTotalPriceInput.addEventListener('input', updateRemaining);
+if (resPaidAmountInput) resPaidAmountInput.addEventListener('input', updateRemaining);
+
+// Open Modal
+if (openAddReservationModalBtn) {
+    openAddReservationModalBtn.addEventListener('click', () => {
+        if (reservationFormEl) reservationFormEl.reset();
+        if (resIdInput) resIdInput.value = '';
+        if (resRemainingAmountInput) resRemainingAmountInput.value = '0.00';
+        const modalTitle = document.getElementById('resModalTitle');
+        if (modalTitle) modalTitle.textContent = 'إضافة حجز دواء جديد';
+        if (reservationModalEl) reservationModalEl.classList.add('active');
+    });
+}
+
+if (closeReservationModalBtn) {
+    closeReservationModalBtn.addEventListener('click', () => {
+        if (reservationModalEl) reservationModalEl.classList.remove('active');
+    });
+}
+
+// Filter listeners
+if (resSearchInput) resSearchInput.addEventListener('input', renderReservations);
+if (resStatusFilter) resStatusFilter.addEventListener('change', renderReservations);
+
+// Listen to Firestore real-time updates
+function initReservationsListener() {
+    onSnapshot(reservationsCol, (snapshot) => {
+        allReservations = {};
+        snapshot.forEach((docSnap) => {
+            allReservations[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
+        });
+        renderReservations();
+    }, (err) => {
+        console.error("Error loading reservations:", err);
+    });
+}
+initReservationsListener();
+
+// Render reservations table & stats
+function renderReservations() {
+    if (!reservationsTableBody) return;
+
+    const resList = Object.values(allReservations);
+    
+    // Sort desc by createdAt or updatedAt
+    resList.sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
+
+    // Live recalculate overall statistics
+    // Note: status 'ملغي' is excluded from revenue stats
+    let totalCount = 0;
+    let totalCollected = 0;
+    let totalRemaining = 0;
+    let totalValue = 0;
+
+    resList.forEach(res => {
+        if (res.status !== 'ملغي') {
+            totalCount++;
+            const price = parseFloat(res.totalPrice) || 0;
+            const paid = parseFloat(res.paidAmount) || 0;
+            const rem = Math.max(0, price - paid);
+
+            totalValue += price;
+            totalCollected += paid;
+            totalRemaining += rem;
+        }
+    });
+
+    if (totalReservationsCountEl) totalReservationsCountEl.textContent = totalCount;
+    if (totalCollectedAmountEl) totalCollectedAmountEl.textContent = totalCollected.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
+    if (totalRemainingAmountEl) totalRemainingAmountEl.textContent = totalRemaining.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
+    if (totalReservationsValueEl) totalReservationsValueEl.textContent = totalValue.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
+
+    // Apply Filter & Search
+    const searchVal = (resSearchInput ? resSearchInput.value : '').trim().toLowerCase();
+    const statusVal = resStatusFilter ? resStatusFilter.value : '';
+
+    const filtered = resList.filter(res => {
+        const matchesSearch = !searchVal || 
+            (res.customerName && res.customerName.toLowerCase().includes(searchVal)) || 
+            (res.customerPhone && res.customerPhone.includes(searchVal)) ||
+            (res.orderDetails && res.orderDetails.toLowerCase().includes(searchVal));
+        const matchesStatus = !statusVal || res.status === statusVal;
+        return matchesSearch && matchesStatus;
+    });
+
+    reservationsTableBody.innerHTML = '';
+
+    if (filtered.length === 0) {
+        reservationsTableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:30px; color:var(--text-gray);">لا توجد حجوزات مطابقة.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach((res, index) => {
+        const tr = document.createElement('tr');
+
+        const price = parseFloat(res.totalPrice) || 0;
+        const paid = parseFloat(res.paidAmount) || 0;
+        const rem = Math.max(0, price - paid);
+
+        let statusClass = 'status-pending';
+        if (res.status === 'مكتمل') statusClass = 'status-completed';
+        else if (res.status === 'ملغي') statusClass = 'status-cancelled';
+
+        tr.innerHTML = `
+            <td><strong>${index + 1}</strong></td>
+            <td>
+                <div style="font-weight:700;">${escapeHTML(res.customerName || 'بدون اسم')}</div>
+                <div style="font-size:13px; color:var(--text-gray); font-family:monospace;" dir="ltr">${escapeHTML(res.customerPhone || '')}</div>
+            </td>
+            <td style="max-width: 150px; font-size:13px;">${escapeHTML(res.customerAddress || '-')}</td>
+            <td style="max-width: 200px; white-space: pre-wrap; font-size:13px;">${escapeHTML(res.orderDetails || '-')}</td>
+            <td><strong>${price.toFixed(2)}</strong> ج.م</td>
+            <td style="color:#16a34a;"><strong>${paid.toFixed(2)}</strong> ج.م</td>
+            <td>
+                <span class="remaining-tag ${rem > 0 ? 'remaining-has-balance' : 'remaining-zero'}">
+                    ${rem.toFixed(2)} ج.م
+                </span>
+            </td>
+            <td>
+                <select style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 13px; font-weight: bold;"
+                        onchange="updateReservationStatus('${res.id}', this.value)" class="${statusClass}">
+                    <option value="غير مكتمل" ${res.status === 'غير مكتمل' ? 'selected' : ''}>غير مكتمل</option>
+                    <option value="مكتمل" ${res.status === 'مكتمل' ? 'selected' : ''}>مكتمل</option>
+                    <option value="ملغي" ${res.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                </select>
+            </td>
+            <td>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="btn-whatsapp" onclick="openWaModal('${res.id}')" title="مشاركة عبر واتساب">
+                        <i class="fa-brands fa-whatsapp"></i> واتساب
+                    </button>
+                    <button class="action-btn edit-btn" onclick="editReservation('${res.id}')" title="تعديل الحجز">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="action-btn delete-btn" onclick="deleteReservation('${res.id}')" title="حذف الحجز">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        reservationsTableBody.appendChild(tr);
+    });
+}
+
+// Form Submit: Add or Edit Reservation
+if (reservationFormEl) {
+    reservationFormEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = resIdInput ? resIdInput.value.trim() : '';
+        const name = resCustomerNameInput ? resCustomerNameInput.value.trim() : '';
+        const phone = resCustomerPhoneInput ? resCustomerPhoneInput.value.trim() : '';
+        const address = resCustomerAddressInput ? resCustomerAddressInput.value.trim() : '';
+        const details = resOrderDetailsInput ? resOrderDetailsInput.value.trim() : '';
+        const totalPrice = parseFloat(resTotalPriceInput ? resTotalPriceInput.value : 0) || 0;
+        const paidAmount = parseFloat(resPaidAmountInput ? resPaidAmountInput.value : 0) || 0;
+        const status = resStatusInput ? resStatusInput.value : 'غير مكتمل';
+        const notes = resNotesInput ? resNotesInput.value.trim() : '';
+
+        const data = {
+            customerName: name,
+            customerPhone: phone,
+            customerAddress: address,
+            orderDetails: details,
+            totalPrice: totalPrice,
+            paidAmount: paidAmount,
+            remainingAmount: Math.max(0, totalPrice - paidAmount),
+            status: status,
+            notes: notes,
+            updatedAt: new Date().toISOString()
+        };
+
+        const saveBtn = document.getElementById('saveReservationBtn');
+        if (saveBtn) saveBtn.disabled = true;
+
+        try {
+            if (id) {
+                await updateDoc(doc(db, 'reservations', id), data);
+            } else {
+                data.createdAt = new Date().toISOString();
+                await addDoc(reservationsCol, data);
+            }
+            if (reservationModalEl) reservationModalEl.classList.remove('active');
+            reservationFormEl.reset();
+        } catch (error) {
+            console.error("Error saving reservation:", error);
+            alert("حدث خطأ أثناء حفظ الحجز. يرجى المحاولة مرة أخرى.");
+        } finally {
+            if (saveBtn) saveBtn.disabled = false;
+        }
+    });
+}
+
+// Edit Reservation Window Function
+window.editReservation = function(id) {
+    const res = allReservations[id];
+    if (!res) return;
+
+    if (resIdInput) resIdInput.value = id;
+    if (resCustomerNameInput) resCustomerNameInput.value = res.customerName || '';
+    if (resCustomerPhoneInput) resCustomerPhoneInput.value = res.customerPhone || '';
+    if (resCustomerAddressInput) resCustomerAddressInput.value = res.customerAddress || '';
+    if (resOrderDetailsInput) resOrderDetailsInput.value = res.orderDetails || '';
+    if (resTotalPriceInput) resTotalPriceInput.value = res.totalPrice || '';
+    if (resPaidAmountInput) resPaidAmountInput.value = res.paidAmount || 0;
+    if (resStatusInput) resStatusInput.value = res.status || 'غير مكتمل';
+    if (resNotesInput) resNotesInput.value = res.notes || '';
+
+    updateRemaining();
+
+    const modalTitle = document.getElementById('resModalTitle');
+    if (modalTitle) modalTitle.textContent = 'تعديل حجز الدواء';
+
+    if (reservationModalEl) reservationModalEl.classList.add('active');
+};
+
+// Update status directly from table dropdown
+window.updateReservationStatus = async function(id, newStatus) {
+    try {
+        await updateDoc(doc(db, 'reservations', id), {
+            status: newStatus,
+            updatedAt: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error("Error updating status:", err);
+        alert("تعذر تحديث الحالة.");
+    }
+};
+
+// Delete Reservation
+window.deleteReservation = async function(id) {
+    if (confirm("هل أنت متأكد من حذف هذا الحجز نهائياً؟")) {
+        try {
+            await deleteDoc(doc(db, 'reservations', id));
+        } catch (err) {
+            console.error("Error deleting reservation:", err);
+            alert("تعذر حذف الحجز.");
+        }
+    }
+};
+
+// WhatsApp Modal & Pre-filled editable message
+window.openWaModal = function(id) {
+    const res = allReservations[id];
+    if (!res) return;
+
+    currentWaReservationId = id;
+    if (waCustomerNameDisplay) waCustomerNameDisplay.textContent = res.customerName || 'عميل صيدلية البدري';
+    if (waCustomerPhoneDisplay) waCustomerPhoneDisplay.textContent = res.customerPhone || '-';
+
+    const price = parseFloat(res.totalPrice) || 0;
+    const paid = parseFloat(res.paidAmount) || 0;
+    const rem = Math.max(0, price - paid);
+
+    // Draft message template (Excludes status line as requested by user)
+    const templateMsg = `أهلاً بك أستاذ/ة ${res.customerName || ''} 🌸
+من صيدلية البدري 🏥
+
+تفاصيل حجز الدواء الخاص بكم:
+📋 الطلب: ${res.orderDetails || ''}
+📍 العنوان: ${res.customerAddress || ''}
+💰 إجمالي المبلغ: ${price.toFixed(2)} ج.م
+💵 المبلغ المدفوع: ${paid.toFixed(2)} ج.م
+📌 المبلغ المتبقي: ${rem.toFixed(2)} ج.م
+
+شكراً لثقتكم بصيدلية البدري ❤️
+لأي استفسار تواصل معنا عبر هذا الرقم.`;
+
+    if (waMessageText) waMessageText.value = templateMsg;
+    if (whatsappModalEl) whatsappModalEl.classList.add('active');
+};
+
+if (closeWhatsappModalBtn) {
+    closeWhatsappModalBtn.addEventListener('click', () => {
+        if (whatsappModalEl) whatsappModalEl.classList.remove('active');
+    });
+}
+
+if (cancelWaBtn) {
+    cancelWaBtn.addEventListener('click', () => {
+        if (whatsappModalEl) whatsappModalEl.classList.remove('active');
+    });
+}
+
+// Send message to WhatsApp via wa.me link
+if (sendWaBtn) {
+    sendWaBtn.addEventListener('click', () => {
+        const res = allReservations[currentWaReservationId];
+        let phone = res ? res.customerPhone : '';
+        if (waCustomerPhoneDisplay && !phone) phone = waCustomerPhoneDisplay.textContent;
+
+        if (!phone) {
+            alert("رقم الهاتف غير متاح.");
+            return;
+        }
+
+        // Normalize Egypt Phone number format (e.g. 010... -> 2010...)
+        let cleaned = phone.replace(/\D/g, '');
+        if (cleaned.startsWith('01')) {
+            cleaned = '2' + cleaned;
+        } else if (cleaned.startsWith('1')) {
+            cleaned = '20' + cleaned;
+        }
+
+        const editedMessage = waMessageText ? waMessageText.value : '';
+        const encoded = encodeURIComponent(editedMessage);
+        const waUrl = `https://wa.me/${cleaned}?text=${encoded}`;
+
+        window.open(waUrl, '_blank');
+
+        if (whatsappModalEl) whatsappModalEl.classList.remove('active');
+    });
+}
