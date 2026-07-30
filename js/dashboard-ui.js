@@ -14,6 +14,10 @@ links.forEach(link => {
         document.getElementById(target).classList.add('active');
 
         topBarTitle.textContent = link.textContent.trim();
+
+        if (window.innerWidth <= 992) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     });
 });
 
