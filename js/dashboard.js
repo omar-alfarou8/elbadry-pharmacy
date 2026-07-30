@@ -1572,18 +1572,27 @@ window.openWaModal = function (id) {
     const paid = parseFloat(res.paidAmount) || 0;
     const rem = Math.max(0, price - paid);
 
-    // Draft message template (Excludes status line as requested by user)
-    const templateMsg = `أهلاً بك أستاذ/ة ${res.customerName || ''} 🌸
-من صيدلية البدري 🏥
+    const flower = '\u{1F338}';
+    const hospital = '\u{1F3E5}';
+    const clipboard = '\u{1F4CB}';
+    const pin = '\u{1F4CD}';
+    const money = '\u{1F4B0}';
+    const dollar = '\u{1F4B5}';
+    const pushpin = '\u{1F4CE}';
+    const heart = '\u{2764}\u{FE0F}';
 
-تفاصيل حجز الدواء الخاص بكم:
-📋 الطلب: ${res.orderDetails || ''}
-📍 العنوان: ${res.customerAddress || ''}
-💰 إجمالي المبلغ: ${price.toFixed(2)} ج.م
-💵 المبلغ المدفوع: ${paid.toFixed(2)} ج.م
-📌 المبلغ المتبقي: ${rem.toFixed(2)} ج.م
+    // Draft message template with clean unicode emojis & WhatsApp markdown
+    const templateMsg = `أهلاً بك أستاذ/ة ${res.customerName || ''} ${flower}
+من *صيدلية البدري* ${hospital}
 
-شكراً لثقتكم بصيدلية البدري ❤️
+*تفاصيل حجز الدواء الخاص بكم:*
+${clipboard} *الطلب:* ${res.orderDetails || ''}
+${pin} *العنوان:* ${res.customerAddress || ''}
+${money} *إجمالي المبلغ:* ${price.toFixed(2)} ج.م
+${dollar} *المبلغ المدفوع:* ${paid.toFixed(2)} ج.م
+${pushpin} *المبلغ المتبقي:* ${rem.toFixed(2)} ج.م
+
+شكراً لثقتكم بصيدلية البدري ${heart}
 لأي استفسار تواصل معنا عبر هذا الرقم.`;
 
     if (waMessageText) waMessageText.value = templateMsg;
