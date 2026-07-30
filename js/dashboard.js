@@ -1572,14 +1572,14 @@ window.openWaModal = function (id) {
     const paid = parseFloat(res.paidAmount) || 0;
     const rem = Math.max(0, price - paid);
 
-    const flower = '\u{1F338}';
-    const hospital = '\u{1F3E5}';
-    const clipboard = '\u{1F4CB}';
-    const pin = '\u{1F4CD}';
-    const money = '\u{1F4B0}';
-    const dollar = '\u{1F4B5}';
-    const pushpin = '\u{1F4CE}';
-    const heart = '\u{2764}\u{FE0F}';
+    const flower = '\uD83C\uDF38';
+    const hospital = '\uD83C\uDFE5';
+    const clipboard = '\uD83D\uDCCB';
+    const pin = '\uD83D\uDCCD';
+    const money = '\uD83D\uDCB0';
+    const dollar = '\uD83D\uDCB5';
+    const pushpin = '\uD83D\uDCCC';
+    const heart = '\u2764\uFE0F';
 
     // Draft message template with clean unicode emojis & WhatsApp markdown
     const templateMsg = `أهلاً بك أستاذ/ة ${res.customerName || ''} ${flower}
