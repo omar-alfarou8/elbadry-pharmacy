@@ -148,7 +148,7 @@ productForm.addEventListener('submit', async (e) => {
     const id = document.getElementById('productId').value;
     const name = (document.getElementById('productName').value || '').trim();
     const nameEn = (document.getElementById('productNameEn').value || '').trim();
-    
+
     if (!name && !nameEn) {
         alert('يرجى كتابة اسم للمنتج (بالعربية أو الإنجليزية على الأقل).');
         saveBtn.innerHTML = 'حفظ المنتج';
@@ -156,11 +156,11 @@ productForm.addEventListener('submit', async (e) => {
         return;
     }
     const price = document.getElementById('productPrice').value;
-    
+
     // Read checked categories
     const checkedBoxes = document.querySelectorAll('input[name="productCategories"]:checked');
     const category = Array.from(checkedBoxes).map(cb => cb.value);
-    
+
     if (category.length === 0) {
         alert('يرجى اختيار قسم واحد على الأقل للمنتج.');
         saveBtn.innerHTML = 'حفظ المنتج';
@@ -270,7 +270,7 @@ window.editProduct = function (id) {
         document.getElementById('productNameEn').value = prod.nameEn || '';
     }
     document.getElementById('productPrice').value = prod.price || '';
-    
+
     // Set discount input field
     const discountInput = document.getElementById('productDiscount');
     if (discountInput) {
@@ -326,13 +326,13 @@ window.deleteProduct = async function (id) {
             await deleteDoc(doc(db, 'products', id));
             // Remove from local memory cache to save Firestore reads
             cachedProductsList = cachedProductsList.filter(p => p.id !== id);
-            
+
             // Adjust page number if the current page has no products left after deletion
             const maxPage = Math.max(1, Math.ceil(cachedProductsList.length / PAGE_SIZE));
             if (currentPage > maxPage) {
                 currentPage = maxPage;
             }
-            
+
             loadProductsPage(currentPage);
             updateTotalProductsCount();
         } catch (error) {
@@ -461,7 +461,7 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
         // Modal List
         const li = document.createElement('li');
         li.style = "display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.02); margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border-color);";
-        
+
         const safeCatName = escapeHTML(cat.name).replace(/'/g, "\\'");
         const safeIcon = escapeHTML(cat.icon || '').replace(/'/g, "\\'");
         const safeImage = escapeHTML(cat.image || '').replace(/'/g, "\\'");
@@ -509,18 +509,18 @@ onSnapshot(query(categoriesCol, orderBy('createdAt', 'asc')), async (snapshot) =
 window.editCategory = function (id, name, type, icon, image, discount) {
     document.getElementById('editCategoryId').value = id;
     document.getElementById('newCategoryName').value = name;
-    
+
     const newCategoryDiscount = document.getElementById('newCategoryDiscount');
     if (newCategoryDiscount) {
         newCategoryDiscount.value = discount || '';
     }
-    
+
     const typeSelect = document.getElementById('newCategoryType');
     if (typeSelect) {
         typeSelect.value = type;
         typeSelect.dispatchEvent(new Event('change'));
     }
-    
+
     if (type === 'icon') {
         document.getElementById('selectedIconClass').value = icon;
         const iconOptions = document.querySelectorAll('.icon-option');
@@ -540,7 +540,7 @@ window.editCategory = function (id, name, type, icon, image, discount) {
     } else {
         document.getElementById('categoryImage').value = image;
     }
-    
+
     document.getElementById('addCategoryBtn').textContent = 'حفظ تعديلات القسم';
     document.getElementById('cancelEditCategoryBtn').style.display = 'block';
 };
@@ -548,16 +548,16 @@ window.editCategory = function (id, name, type, icon, image, discount) {
 window.resetCategoryForm = function () {
     document.getElementById('editCategoryId').value = '';
     document.getElementById('newCategoryName').value = '';
-    
+
     const newCategoryDiscount = document.getElementById('newCategoryDiscount');
     if (newCategoryDiscount) newCategoryDiscount.value = '';
-    
+
     const imageInput = document.getElementById('categoryImage');
     if (imageInput) imageInput.value = '';
-    
+
     const imageFile = document.getElementById('categoryImageFile');
     if (imageFile) imageFile.value = '';
-    
+
     document.getElementById('addCategoryBtn').textContent = 'إضافة القسم الجديد';
     document.getElementById('cancelEditCategoryBtn').style.display = 'none';
 };
@@ -576,13 +576,13 @@ if (addCategoryBtn) {
         if (val) {
             addCategoryBtn.innerHTML = editId ? 'جاري الحفظ... <i class="fa-solid fa-spinner fa-spin"></i>' : 'جاري الإضافة... <i class="fa-solid fa-spinner fa-spin"></i>';
             addCategoryBtn.disabled = true;
-            
+
             const type = document.getElementById('newCategoryType').value;
             let icon = '';
             let image = '';
             const discountInput = document.getElementById('newCategoryDiscount');
             const discount = discountInput && discountInput.value ? Number(discountInput.value) : 0;
-            
+
             try {
                 if (type === 'icon') {
                     icon = document.getElementById('selectedIconClass').value || 'fa-solid fa-pills';
@@ -600,9 +600,9 @@ if (addCategoryBtn) {
                         image = 'https://via.placeholder.com/150';
                     }
                 }
-                
-                const catData = { 
-                    name: val, 
+
+                const catData = {
+                    name: val,
                     type: type,
                     icon: icon,
                     image: image,
@@ -615,7 +615,7 @@ if (addCategoryBtn) {
                     catData.createdAt = new Date();
                     await addDoc(categoriesCol, catData);
                 }
-                
+
                 resetCategoryForm();
             } catch (err) {
                 console.error("Error saving category:", err);
@@ -642,10 +642,10 @@ async function loadProductsPage(page = 1) {
         if (cachedProductsList.length === 0) {
             isFetchingProducts = true;
             productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل المنتجات...</td></tr>`;
-            
+
             const q = query(productsCol, orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
-            
+
             cachedProductsList = [];
             querySnapshot.forEach(docSnap => {
                 cachedProductsList.push({ id: docSnap.id, ...docSnap.data() });
@@ -702,7 +702,7 @@ async function loadProductsPage(page = 1) {
 function renderProductsList(products) {
     productsTableBody.innerHTML = '';
     allProducts = {}; // Reset local cache for editProduct functionality
-    
+
     if (products.length === 0) {
         productsTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">لا توجد منتجات مطابقة.</td></tr>`;
         return;
@@ -737,7 +737,7 @@ function renderProductsList(products) {
 
         const tr = document.createElement('tr');
         const imgUrl = prod.image && (prod.image.startsWith('http://') || prod.image.startsWith('https://')) ? escapeHTML(prod.image) : 'https://via.placeholder.com/150';
-        
+
         const displayNameAr = prod.name ? escapeHTML(prod.name) : '';
         const displayNameEn = prod.nameEn ? escapeHTML(prod.nameEn) : '';
         let nameCellContent = '';
@@ -769,7 +769,7 @@ function updatePaginationUI(totalCount, startIndex, countOnPage) {
     const nextPageBtn = document.getElementById('nextPageBtn');
 
     if (paginationTotal) paginationTotal.textContent = totalCount;
-    
+
     if (paginationRange) {
         if (totalCount === 0) {
             paginationRange.textContent = '0 - 0';
@@ -783,7 +783,7 @@ function updatePaginationUI(totalCount, startIndex, countOnPage) {
     if (prevPageBtn) {
         prevPageBtn.disabled = currentPage === 1;
     }
-    
+
     if (nextPageBtn) {
         const hasNext = startIndex + countOnPage < totalCount;
         nextPageBtn.disabled = !hasNext;
@@ -1084,12 +1084,12 @@ if (slideImageUrlInput) {
 
 let allSlides = {};
 
-window.resetSlideForm = function() {
+window.resetSlideForm = function () {
     if (slideForm) slideForm.reset();
     document.getElementById('slideId').value = '';
-    
+
     if (saveSlideBtn) saveSlideBtn.innerHTML = 'إضافة الشريحة الإعلانية';
-    
+
     const cancelSlideEditBtn = document.getElementById('cancelSlideEditBtn');
     if (cancelSlideEditBtn) cancelSlideEditBtn.style.display = 'none';
 
@@ -1187,7 +1187,7 @@ if (slidesTableBody) {
     });
 }
 
-window.editSlide = function(id) {
+window.editSlide = function (id) {
     const slide = allSlides[id];
     if (!slide) return;
 
@@ -1208,7 +1208,7 @@ window.editSlide = function(id) {
     if (slideImageFile) slideImageFile.value = '';
 
     if (saveSlideBtn) saveSlideBtn.innerHTML = 'حفظ التعديلات';
-    
+
     const cancelSlideEditBtn = document.getElementById('cancelSlideEditBtn');
     if (cancelSlideEditBtn) cancelSlideEditBtn.style.display = 'block';
 
@@ -1218,7 +1218,7 @@ window.editSlide = function(id) {
     }
 };
 
-window.deleteSlide = async function(id) {
+window.deleteSlide = async function (id) {
     if (confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟')) {
         try {
             await deleteDoc(doc(db, 'slides', id));
@@ -1320,7 +1320,7 @@ function renderReservations() {
     if (!reservationsTableBody) return;
 
     const resList = Object.values(allReservations);
-    
+
     // Sort desc by createdAt or updatedAt
     resList.sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
 
@@ -1354,8 +1354,8 @@ function renderReservations() {
     const statusVal = resStatusFilter ? resStatusFilter.value : '';
 
     const filtered = resList.filter(res => {
-        const matchesSearch = !searchVal || 
-            (res.customerName && res.customerName.toLowerCase().includes(searchVal)) || 
+        const matchesSearch = !searchVal ||
+            (res.customerName && res.customerName.toLowerCase().includes(searchVal)) ||
             (res.customerPhone && res.customerPhone.includes(searchVal)) ||
             (res.orderDetails && res.orderDetails.toLowerCase().includes(searchVal));
         const matchesStatus = !statusVal || res.status === statusVal;
@@ -1471,7 +1471,7 @@ if (reservationFormEl) {
 }
 
 // Edit Reservation Window Function
-window.editReservation = function(id) {
+window.editReservation = function (id) {
     const res = allReservations[id];
     if (!res) return;
 
@@ -1494,7 +1494,7 @@ window.editReservation = function(id) {
 };
 
 // Update status directly from table dropdown
-window.updateReservationStatus = async function(id, newStatus) {
+window.updateReservationStatus = async function (id, newStatus) {
     try {
         await updateDoc(doc(db, 'reservations', id), {
             status: newStatus,
@@ -1507,7 +1507,7 @@ window.updateReservationStatus = async function(id, newStatus) {
 };
 
 // Delete Reservation
-window.deleteReservation = async function(id) {
+window.deleteReservation = async function (id) {
     if (confirm("هل أنت متأكد من حذف هذا الحجز نهائياً؟")) {
         try {
             await deleteDoc(doc(db, 'reservations', id));
@@ -1519,7 +1519,7 @@ window.deleteReservation = async function(id) {
 };
 
 // WhatsApp Modal & Pre-filled editable message
-window.openWaModal = function(id) {
+window.openWaModal = function (id) {
     const res = allReservations[id];
     if (!res) return;
 
