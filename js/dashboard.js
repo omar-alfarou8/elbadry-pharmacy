@@ -25,6 +25,13 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
     });
 });
 
+// Prevent mouse wheel from changing input[type=number] values
+document.addEventListener('wheel', function () {
+    if (document.activeElement && document.activeElement.type === 'number') {
+        document.activeElement.blur();
+    }
+});
+
 // Collections
 const productsCol = collection(db, 'products');
 const ordersCol = collection(db, 'orders');
