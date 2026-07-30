@@ -1335,11 +1335,8 @@ function renderReservations() {
         if (res.status !== 'ملغي') {
             totalCount++;
             const price = parseFloat(res.totalPrice) || 0;
-            const isCompleted = res.status === 'مكتمل';
-            const isIncomplete = res.status === 'غير مكتمل';
-
-            const paid = isCompleted ? price : (isIncomplete ? 0 : (parseFloat(res.paidAmount) || 0));
-            const rem = isCompleted ? 0 : (isIncomplete ? price : Math.max(0, price - paid));
+            const paid = parseFloat(res.paidAmount) || 0;
+            const rem = Math.max(0, price - paid);
 
             totalValue += price;
             totalCollected += paid;
@@ -1376,11 +1373,8 @@ function renderReservations() {
         const tr = document.createElement('tr');
 
         const price = parseFloat(res.totalPrice) || 0;
-        const isCompleted = res.status === 'مكتمل';
-        const isIncomplete = res.status === 'غير مكتمل';
-
-        const paid = isCompleted ? price : (isIncomplete ? 0 : (parseFloat(res.paidAmount) || 0));
-        const rem = isCompleted ? 0 : (isIncomplete ? price : Math.max(0, price - paid));
+        const paid = parseFloat(res.paidAmount) || 0;
+        const rem = Math.max(0, price - paid);
 
         let statusClass = 'status-pending';
         if (res.status === 'مكتمل') statusClass = 'status-completed';
@@ -1433,9 +1427,6 @@ if (resStatusInput) {
         if (resStatusInput.value === 'مكتمل' && resTotalPriceInput && resPaidAmountInput) {
             resPaidAmountInput.value = resTotalPriceInput.value;
             updateRemaining();
-        } else if (resStatusInput.value === 'غير مكتمل' && resPaidAmountInput) {
-            resPaidAmountInput.value = '0';
-            updateRemaining();
         }
     });
 }
@@ -1455,13 +1446,11 @@ if (reservationFormEl) {
         const status = resStatusInput ? resStatusInput.value : 'غير مكتمل';
         const notes = resNotesInput ? resNotesInput.value.trim() : '';
 
-        if (status === 'مكتمل') {
+        if (status === 'مكتمل' && paidAmount < totalPrice) {
             paidAmount = totalPrice;
-        } else if (status === 'غير مكتمل') {
-            paidAmount = 0;
         }
 
-        const remainingAmount = status === 'مكتمل' ? 0 : (status === 'غير مكتمل' ? totalPrice : Math.max(0, totalPrice - paidAmount));
+        const remainingAmount = Math.max(0, totalPrice - paidAmount);
 
         const data = {
             customerName: name,
@@ -1533,9 +1522,6 @@ window.updateReservationStatus = async function (id, newStatus) {
         if (newStatus === 'مكتمل') {
             updateData.paidAmount = price;
             updateData.remainingAmount = 0;
-        } else if (newStatus === 'غير مكتمل') {
-            updateData.paidAmount = 0;
-            updateData.remainingAmount = price;
         }
     }
 
