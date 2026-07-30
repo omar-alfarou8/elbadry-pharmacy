@@ -59,7 +59,8 @@
                 <li><a href="#" data-target="orders"><i class="fa-solid fa-cart-arrow-down"></i> الطلبات</a></li>
                 <li><a href="#" data-target="delivery"><i class="fa-solid fa-truck-fast"></i> رسوم التوصيل</a></li>
                 <li><a href="#" data-target="slider"><i class="fa-solid fa-images"></i> السلايدر الإعلاني</a></li>
-                <li><a href="#" data-target="reservations"><i class="fa-solid fa-notes-medical"></i> حجوزات الأدوية</a></li>
+                <li><a href="#" data-target="reservations"><i class="fa-solid fa-notes-medical"></i> حجوزات الأدوية</a>
+                </li>
                 <li style="margin-top: auto;"><a href="#" id="logoutBtn" style="color: var(--error-color)"><i
                             class="fa-solid fa-sign-out-alt"></i> تسجيل خروج</a></li>
             </ul>
@@ -69,7 +70,8 @@
         <main class="main-content">
             <div class="top-bar">
                 <div class="page-title" style="display: flex; align-items: center; gap: 12px;">
-                    <button id="sidebarToggleBtn" class="sidebar-toggle-btn" title="إخفاء / إظهار القائمة الجانبية" aria-label="تبديل القائمة الجانبية">
+                    <button id="sidebarToggleBtn" class="sidebar-toggle-btn" title="إخفاء / إظهار القائمة الجانبية"
+                        aria-label="تبديل القائمة الجانبية">
                         <i class="fa-solid fa-bars"></i>
                     </button>
                     <h2 id="topBarTitle">الرئيسية</h2>
@@ -156,28 +158,40 @@
                         </div>
                     </div>
                     <!-- صف البحث والفلترة -->
-                    <div class="filter-row" style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.01); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div class="filter-row"
+                        style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.01); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);">
                         <div style="flex: 1; min-width: 200px; position: relative;">
-                            <input type="text" id="adminProductSearch" placeholder="بحث عن منتج بالاسم..." style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px; text-align: right;">
-                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray);"></i>
+                            <input type="text" id="adminProductSearch" placeholder="بحث عن منتج بالاسم..."
+                                style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px; text-align: right;">
+                            <i class="fa-solid fa-magnifying-glass"
+                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray);"></i>
                         </div>
                         <div style="width: 200px;">
-                            <select id="adminProductCategoryFilter" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px;">
+                            <select id="adminProductCategoryFilter"
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px;">
                                 <option value="">كل الأقسام</option>
                             </select>
                         </div>
                     </div>
                     <!-- أزرار الصفحات (بالأعلى) -->
-                    <div id="adminProductPagination" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 15px;">
+                    <div id="adminProductPagination"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 15px;">
                         <div style="color: var(--text-gray); font-size: 14px;">
-                            عرض المنتجات من <span id="paginationRange" style="font-weight: bold; color: var(--primary-color);">0 - 0</span> من أصل <span id="paginationTotal" style="font-weight: bold;">0</span>
+                            عرض المنتجات من <span id="paginationRange"
+                                style="font-weight: bold; color: var(--primary-color);">0 - 0</span> من أصل <span
+                                id="paginationTotal" style="font-weight: bold;">0</span>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button id="prevPageBtn" class="btn-outline" style="padding: 8px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;" disabled>
+                            <button id="prevPageBtn" class="btn-outline"
+                                style="padding: 8px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;"
+                                disabled>
                                 <i class="fa-solid fa-chevron-right"></i> السابق
                             </button>
-                            <span id="currentPageNum" style="font-weight: bold; color: var(--primary-color); padding: 0 10px; font-size: 16px;">1</span>
-                            <button id="nextPageBtn" class="btn-outline" style="padding: 8px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;" disabled>
+                            <span id="currentPageNum"
+                                style="font-weight: bold; color: var(--primary-color); padding: 0 10px; font-size: 16px;">1</span>
+                            <button id="nextPageBtn" class="btn-outline"
+                                style="padding: 8px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;"
+                                disabled>
                                 التالي <i class="fa-solid fa-chevron-left"></i>
                             </button>
                         </div>
@@ -261,8 +275,9 @@
                     <div class="panel-header">
                         <h3>إدارة السلايدر الإعلاني</h3>
                     </div>
-                    
-                    <form id="slideForm" style="margin-bottom: 30px; background: rgba(0,0,0,0.01); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+
+                    <form id="slideForm"
+                        style="margin-bottom: 30px; background: rgba(0,0,0,0.01); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
                         <input type="hidden" id="slideId">
                         <div class="input-row">
                             <div class="input-group" style="flex: 1;">
@@ -282,24 +297,37 @@
                         </div>
                         <div class="input-group">
                             <label>صورة الإعلان</label>
-                            <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--border-color);">
+                            <div
+                                style="display: flex; flex-direction: column; gap: 10px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 12px; border: 1px dashed var(--border-color);">
                                 <div>
-                                    <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الأول) رفع صورة من جهازك:</label>
-                                    <input type="file" id="slideImageFile" accept="image/*" style="width: 100%; padding: 8px; border-radius: 8px; font-family: inherit; background: white; border: 1px solid var(--border-color); cursor: pointer;">
+                                    <label
+                                        style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار
+                                        الأول) رفع صورة من جهازك:</label>
+                                    <input type="file" id="slideImageFile" accept="image/*"
+                                        style="width: 100%; padding: 8px; border-radius: 8px; font-family: inherit; background: white; border: 1px solid var(--border-color); cursor: pointer;">
                                 </div>
-                                <div style="text-align: center; color: var(--text-gray); font-size: 13px; font-weight: bold;">أو</div>
+                                <div
+                                    style="text-align: center; color: var(--text-gray); font-size: 13px; font-weight: bold;">
+                                    أو</div>
                                 <div>
-                                    <label style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار الثاني) رابط لصورة على الإنترنت (URL):</label>
-                                    <input type="url" id="slideImage" placeholder="https://example.com/slide.jpg" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
+                                    <label
+                                        style="font-size: 14px; font-weight: normal; color: var(--text-gray); margin-bottom: 5px; display: block;">(الخيار
+                                        الثاني) رابط لصورة على الإنترنت (URL):</label>
+                                    <input type="url" id="slideImage" placeholder="https://example.com/slide.jpg"
+                                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
                                 </div>
                             </div>
-                            <div id="slideImagePreviewContainer" style="display: none; margin-top: 15px; text-align: center;">
-                                <img id="slideImagePreview" src="" style="max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                            <div id="slideImagePreviewContainer"
+                                style="display: none; margin-top: 15px; text-align: center;">
+                                <img id="slideImagePreview" src=""
+                                    style="max-height: 150px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button type="submit" class="btn-primary" id="saveSlideBtn" style="flex: 3;">إضافة الشريحة الإعلانية</button>
-                            <button type="button" class="btn-outline" id="cancelSlideEditBtn" style="flex: 1; display: none; padding: 12px; border-radius: 8px;">إلغاء</button>
+                            <button type="submit" class="btn-primary" id="saveSlideBtn" style="flex: 3;">إضافة الشريحة
+                                الإعلانية</button>
+                            <button type="button" class="btn-outline" id="cancelSlideEditBtn"
+                                style="flex: 1; display: none; padding: 12px; border-radius: 8px;">إلغاء</button>
                         </div>
                     </form>
 
@@ -329,7 +357,8 @@
                 <!-- Stat Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon" style="background: rgba(11, 128, 122, 0.1); color: var(--primary-color);">
+                        <div class="stat-icon"
+                            style="background: rgba(11, 128, 122, 0.1); color: var(--primary-color);">
                             <i class="fa-solid fa-bookmark"></i>
                         </div>
                         <div class="stat-info">
@@ -371,23 +400,29 @@
                     <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
                         <h3>قائمة حجوزات الأدوية</h3>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                            <button class="btn-outline" id="exportReservationsExcelBtn" style="border-radius: 10px; padding: 10px 18px; color: #16a34a; border-color: #16a34a; font-weight: 600;">
+                            <button class="btn-outline" id="exportReservationsExcelBtn"
+                                style="border-radius: 10px; padding: 10px 18px; color: #16a34a; border-color: #16a34a; font-weight: 600;">
                                 <i class="fa-solid fa-file-excel"></i> سحب الداتا إكسيل
                             </button>
-                            <button class="btn-primary" id="openAddReservationModal" style="border-radius: 10px; padding: 10px 18px;">
+                            <button class="btn-primary" id="openAddReservationModal"
+                                style="border-radius: 10px; padding: 10px 18px;">
                                 <i class="fa-solid fa-plus"></i> إضافة حجز جديد
                             </button>
                         </div>
                     </div>
 
                     <!-- Filter & Search Row -->
-                    <div class="filter-row" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.01); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div class="filter-row"
+                        style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.01); padding: 12px; border-radius: 12px; border: 1px solid var(--border-color);">
                         <div style="flex: 1; min-width: 220px; position: relative;">
-                            <input type="text" id="resSearchInput" placeholder="بحث باسم العميل أو رقم التليفون..." style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px; text-align: right;">
-                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray);"></i>
+                            <input type="text" id="resSearchInput" placeholder="بحث باسم العميل أو رقم التليفون..."
+                                style="width: 100%; padding: 10px 15px 10px 40px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px; text-align: right;">
+                            <i class="fa-solid fa-magnifying-glass"
+                                style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-gray);"></i>
                         </div>
                         <div style="width: 200px;">
-                            <select id="resStatusFilter" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px;">
+                            <select id="resStatusFilter"
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 15px;">
                                 <option value="">كل الحالات</option>
                                 <option value="غير مكتمل">غير مكتمل</option>
                                 <option value="مكتمل">مكتمل</option>
@@ -452,23 +487,27 @@
                         <input type="number" id="productPrice" required>
                     </div>
                     <div class="input-group" style="flex: 1;">
-                        <label>نسبة الخصم (%) <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <label>نسبة الخصم (%) <span
+                                style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
                         <input type="number" id="productDiscount" min="0" max="99" placeholder="مثال: 15">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">
-                        <label>الكمية في المخزن <span style="font-size: 12px; color: var(--text-gray);">(فارغ = غير محدود)</span></label>
+                        <label>الكمية في المخزن <span style="font-size: 12px; color: var(--text-gray);">(فارغ = غير
+                                محدود)</span></label>
                         <input type="number" id="productStock" min="0" placeholder="مثال: 50">
                     </div>
                     <div class="input-group" style="flex: 1;">
-                        <label>الحد الأقصى للطلب <span style="font-size: 12px; color: var(--text-gray);">(فارغ = لا يوجد حد)</span></label>
+                        <label>الحد الأقصى للطلب <span style="font-size: 12px; color: var(--text-gray);">(فارغ = لا يوجد
+                                حد)</span></label>
                         <input type="number" id="productLimit" min="1" placeholder="مثال: 3">
                     </div>
                 </div>
                 <div class="input-group">
                     <label>الأقسام <span class="required">*</span></label>
-                    <div id="productCategoriesContainer" style="max-height: 150px; overflow-y: auto; border: 2px solid var(--border-color); border-radius: 12px; padding: 12px; background: white; display: flex; flex-direction: column; gap: 8px;">
+                    <div id="productCategoriesContainer"
+                        style="max-height: 150px; overflow-y: auto; border: 2px solid var(--border-color); border-radius: 12px; padding: 12px; background: white; display: flex; flex-direction: column; gap: 8px;">
                         <!-- Filled dynamically from Firebase -->
                     </div>
                 </div>
@@ -555,21 +594,27 @@
                 <h3>إدارة الأقسام</h3>
                 <button class="close-modal" id="closeCategoriesModal"><i class="fa-solid fa-times"></i></button>
             </div>
-            
+
             <div style="margin-bottom: 25px; border-bottom: 1px dashed var(--border-color); padding-bottom: 20px;">
                 <div style="margin-bottom: 12px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم القسم الجديد <span class="required">*</span></label>
-                    <input type="text" id="newCategoryName" placeholder="مثال: عناية بالبشرة" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">اسم القسم الجديد <span
+                            class="required">*</span></label>
+                    <input type="text" id="newCategoryName" placeholder="مثال: عناية بالبشرة"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
                 </div>
-                
+
                 <div style="margin-bottom: 12px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">نسبة الخصم للقسم (%) <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
-                    <input type="number" id="newCategoryDiscount" min="0" max="99" placeholder="مثال: 10 لتطبيق خصم 10% على كل منتجات القسم" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">نسبة الخصم للقسم (%) <span
+                            style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                    <input type="number" id="newCategoryDiscount" min="0" max="99"
+                        placeholder="مثال: 10 لتطبيق خصم 10% على كل منتجات القسم"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
                 </div>
-                
+
                 <div style="margin-bottom: 12px;">
                     <label style="display: block; margin-bottom: 5px; font-weight: bold;">نوع الرمز للقسم:</label>
-                    <select id="newCategoryType" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
+                    <select id="newCategoryType"
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit;">
                         <option value="icon">أيقونة جاهزة</option>
                         <option value="image">صورة مخصصة</option>
                     </select>
@@ -577,27 +622,52 @@
 
                 <div id="newCategoryIconGroup" style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px; font-weight: bold;">اختر أيقونة القسم:</label>
-                    <div id="iconGrid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center;">
-                        <div class="icon-option active" data-icon="fa-solid fa-pills" style="padding: 10px; border: 2px solid var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--primary-color); background: rgba(11,128,122,0.05);"><i class="fa-solid fa-pills"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-wand-magic-sparkles" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-hand-holding-droplet" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-hand-holding-droplet"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-baby" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-baby"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-heart-pulse" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-heart-pulse"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-soap" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-soap"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-scissors" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-scissors"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-prescription-bottle-medical" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-kit-medical" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-kit-medical"></i></div>
-                        <div class="icon-option" data-icon="fa-solid fa-spa" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);"><i class="fa-solid fa-spa"></i></div>
+                    <div id="iconGrid"
+                        style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center;">
+                        <div class="icon-option active" data-icon="fa-solid fa-pills"
+                            style="padding: 10px; border: 2px solid var(--primary-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--primary-color); background: rgba(11,128,122,0.05);">
+                            <i class="fa-solid fa-pills"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-wand-magic-sparkles"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-hand-holding-droplet"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-hand-holding-droplet"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-baby"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-baby"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-heart-pulse"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-heart-pulse"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-soap"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-soap"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-scissors"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-scissors"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-prescription-bottle-medical"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-prescription-bottle-medical"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-kit-medical"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-kit-medical"></i></div>
+                        <div class="icon-option" data-icon="fa-solid fa-spa"
+                            style="padding: 10px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; font-size: 20px; color: var(--text-gray);">
+                            <i class="fa-solid fa-spa"></i></div>
                     </div>
                     <input type="hidden" id="selectedIconClass" value="fa-solid fa-pills">
                 </div>
 
                 <div id="newCategoryImageGroup" style="margin-bottom: 15px; display: none;">
                     <label style="display: block; margin-bottom: 5px; font-weight: bold;">صورة القسم مخصصة:</label>
-                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                        <input type="file" id="categoryImageFile" accept="image/*" style="width: 100%; padding: 5px; background: white; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
-                        <div style="text-align: center; font-size: 11px; font-weight: bold; color: var(--text-gray);">أو رابط URL:</div>
-                        <input type="url" id="categoryImage" placeholder="https://example.com/cat.jpg" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
+                    <div
+                        style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                        <input type="file" id="categoryImageFile" accept="image/*"
+                            style="width: 100%; padding: 5px; background: white; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                        <div style="text-align: center; font-size: 11px; font-weight: bold; color: var(--text-gray);">أو
+                            رابط URL:</div>
+                        <input type="url" id="categoryImage" placeholder="https://example.com/cat.jpg"
+                            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; direction: ltr; text-align: right;">
                     </div>
                 </div>
 
@@ -605,12 +675,15 @@
 
                 <input type="hidden" id="editCategoryId">
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-primary" id="addCategoryBtn" style="flex: 1; padding: 12px;">إضافة القسم الجديد</button>
-                    <button class="btn-outline" id="cancelEditCategoryBtn" style="display: none; padding: 12px; border-radius: 8px;">إلغاء</button>
+                    <button class="btn-primary" id="addCategoryBtn" style="flex: 1; padding: 12px;">إضافة القسم
+                        الجديد</button>
+                    <button class="btn-outline" id="cancelEditCategoryBtn"
+                        style="display: none; padding: 12px; border-radius: 8px;">إلغاء</button>
                 </div>
             </div>
 
-            <ul id="categoriesList" style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto;">
+            <ul id="categoriesList"
+                style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto;">
                 <!-- Filled dynamically -->
             </ul>
         </div>
@@ -632,7 +705,8 @@
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label>رقم التليفون <span class="required">*</span></label>
-                        <input type="tel" id="resCustomerPhone" required placeholder="مثال: 01012345678" style="direction: ltr; text-align: right;">
+                        <input type="tel" id="resCustomerPhone" required placeholder="مثال: 01012345678"
+                            style="direction: ltr; text-align: right;">
                     </div>
                 </div>
                 <div class="input-row">
@@ -641,19 +715,24 @@
                         <input type="text" id="resCustomerAddress" required placeholder="مثال: شارع التحرير - القاهرة">
                     </div>
                     <div class="input-group" style="flex: 1;">
-                        <label>شركة / مصدر الدواء <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
-                        <input type="text" id="resBranch" list="branchesList" placeholder="مثال: الشركة المتحدة، ابن سينا، فارما أوفرسيز...">
+                        <label>شركة / مصدر الدواء <span
+                                style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <input type="text" id="resBranch" list="branchesList"
+                            placeholder="مثال: الشركة المتحدة، ابن سينا، فارما أوفرسيز...">
                         <datalist id="branchesList">
                             <option value="الشركة المتحدة للدواء"></option>
                             <option value="ابن سينا فارما"></option>
                             <option value="فارما أوفرسيز"></option>
                             <option value="مالتي فارما"></option>
+                            <option value="طيبة"></option>
                         </datalist>
                     </div>
                 </div>
                 <div class="input-group">
                     <label>تفاصيل / بيانات الطلب والأدوية <span class="required">*</span></label>
-                    <textarea id="resOrderDetails" rows="3" required placeholder="اكتب اسم الدواء، التركيز، الكمية المطلوبة..." style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 15px;"></textarea>
+                    <textarea id="resOrderDetails" rows="3" required
+                        placeholder="اكتب اسم الدواء، التركيز، الكمية المطلوبة..."
+                        style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 15px;"></textarea>
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">
@@ -662,28 +741,33 @@
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label>المبلغ المحصل (ج.م) <span class="required">*</span></label>
-                        <input type="number" id="resPaidAmount" required step="any" min="0" placeholder="0.00" value="0">
+                        <input type="number" id="resPaidAmount" required step="any" min="0" placeholder="0.00"
+                            value="0">
                     </div>
                     <div class="input-group" style="flex: 1;">
                         <label>المتبقي (ج.م)</label>
-                        <input type="number" id="resRemainingAmount" readonly placeholder="0.00" style="background: #f8fafc; font-weight: bold; color: #dc2626;">
+                        <input type="number" id="resRemainingAmount" readonly placeholder="0.00"
+                            style="background: #f8fafc; font-weight: bold; color: #dc2626;">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">
                         <label>حالة الحجز</label>
-                        <select id="resStatus" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit; font-size: 15px;">
+                        <select id="resStatus"
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit; font-size: 15px;">
                             <option value="غير مكتمل">غير مكتمل</option>
                             <option value="مكتمل">مكتمل</option>
                             <option value="ملغي">ملغي</option>
                         </select>
                     </div>
                     <div class="input-group" style="flex: 1;">
-                        <label>ملاحظات إضافية <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <label>ملاحظات إضافية <span
+                                style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
                         <input type="text" id="resNotes" placeholder="أية ملاحظات خاصة بالحجز...">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;" id="saveReservationBtn">حفظ الحجز</button>
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 15px;"
+                    id="saveReservationBtn">حفظ الحجز</button>
             </form>
         </div>
     </div>
@@ -692,27 +776,35 @@
     <div class="modal" id="whatsappModal">
         <div class="modal-content" style="max-width: 550px;">
             <div class="modal-header">
-                <h3><i class="fa-brands fa-whatsapp" style="color: #25D366; margin-left: 8px;"></i> إرسال تفاصيل الحجز عبر واتساب</h3>
+                <h3><i class="fa-brands fa-whatsapp" style="color: #25D366; margin-left: 8px;"></i> إرسال تفاصيل الحجز
+                    عبر واتساب</h3>
                 <button class="close-modal" id="closeWhatsappModal"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div style="margin-bottom: 15px; padding: 12px; background: rgba(37, 211, 102, 0.08); border-radius: 10px; border: 1px solid rgba(37, 211, 102, 0.2); display: flex; align-items: center; justify-content: space-between;">
+            <div
+                style="margin-bottom: 15px; padding: 12px; background: rgba(37, 211, 102, 0.08); border-radius: 10px; border: 1px solid rgba(37, 211, 102, 0.2); display: flex; align-items: center; justify-content: space-between;">
                 <div>
                     <span style="font-size: 13px; color: var(--text-gray);">إرسال إلى العميل:</span>
-                    <strong id="waCustomerNameDisplay" style="display: block; color: var(--secondary-color); font-size: 15px;">-</strong>
+                    <strong id="waCustomerNameDisplay"
+                        style="display: block; color: var(--secondary-color); font-size: 15px;">-</strong>
                 </div>
                 <div style="text-align: left; direction: ltr;">
-                    <span id="waCustomerPhoneDisplay" style="font-weight: bold; color: #16a34a; font-size: 15px;">-</span>
+                    <span id="waCustomerPhoneDisplay"
+                        style="font-weight: bold; color: #16a34a; font-size: 15px;">-</span>
                 </div>
             </div>
             <div class="input-group">
-                <label style="font-weight: bold; margin-bottom: 8px; display: block;">نص الرسالة (يمكنك تعديله قبل الإرسال):</label>
-                <textarea id="waMessageText" rows="9" style="width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;"></textarea>
+                <label style="font-weight: bold; margin-bottom: 8px; display: block;">نص الرسالة (يمكنك تعديله قبل
+                    الإرسال):</label>
+                <textarea id="waMessageText" rows="9"
+                    style="width: 100%; padding: 14px; border: 2px solid var(--border-color); border-radius: 12px; font-family: inherit; font-size: 14px; line-height: 1.6; resize: vertical;"></textarea>
             </div>
             <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn-primary" id="sendWaBtn" style="flex: 2; background: #25D366; border: none; padding: 12px; font-size: 16px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <button class="btn-primary" id="sendWaBtn"
+                    style="flex: 2; background: #25D366; border: none; padding: 12px; font-size: 16px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <i class="fa-brands fa-whatsapp" style="font-size: 20px;"></i> إرسال عبر واتساب
                 </button>
-                <button class="btn-outline" id="cancelWaBtn" style="flex: 1; padding: 12px; border-radius: 10px;">إلغاء</button>
+                <button class="btn-outline" id="cancelWaBtn"
+                    style="flex: 1; padding: 12px; border-radius: 10px;">إلغاء</button>
             </div>
         </div>
     </div>
