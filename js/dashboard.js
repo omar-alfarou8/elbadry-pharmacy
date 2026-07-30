@@ -1047,6 +1047,65 @@ if (excelFileInput) {
     });
 }
 
+// Export Products to Excel
+const exportProductsBtn = document.getElementById('exportProductsExcelBtn');
+if (exportProductsBtn) {
+    exportProductsBtn.addEventListener('click', async () => {
+        try {
+            exportProductsBtn.disabled = true;
+            exportProductsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التصدير...';
+
+            const querySnapshot = await getDocs(collection(db, 'products'));
+            if (querySnapshot.empty) {
+                alert("لا توجد منتجات لتصديرها.");
+                return;
+            }
+
+            const excelData = [];
+            let index = 1;
+            querySnapshot.forEach(docSnap => {
+                const prod = docSnap.data();
+                excelData.push({
+                    "م": index++,
+                    "اسم المنتج (بالعربية)": prod.name || '',
+                    "اسم المنتج (بالإنجليزية)": prod.nameEn || '',
+                    "السعر (ج.م)": prod.price || 0,
+                    "نسبة الخصم (%)": prod.discount || 0,
+                    "السعر بعد الخصم (ج.م)": prod.finalPrice || prod.price || 0,
+                    "المخزون": prod.stock !== undefined && prod.stock !== null ? prod.stock : 'غير محدود',
+                    "القسم": prod.category || '',
+                    "رابط الصورة": prod.image || ''
+                });
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            worksheet['!cols'] = [
+                { wch: 6 },  // م
+                { wch: 30 }, // اسم المنتج (بالعربية)
+                { wch: 30 }, // اسم المنتج (بالإنجليزية)
+                { wch: 12 }, // السعر
+                { wch: 12 }, // الخصم
+                { wch: 15 }, // السعر بعد الخصم
+                { wch: 12 }, // المخزون
+                { wch: 20 }, // القسم
+                { wch: 40 }  // رابط الصورة
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "منتجات صيدلية البدري");
+
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(workbook, `منتجات_صيدلية_البدري_${today}.xlsx`);
+        } catch (err) {
+            console.error("Error exporting products:", err);
+            alert("حدث خطأ أثناء تصدير المنتجات.");
+        } finally {
+            exportProductsBtn.disabled = false;
+            exportProductsBtn.innerHTML = '<i class="fa-solid fa-file-excel"></i> تصدير المنتجات (إكسيل)';
+        }
+    });
+}
+
 // ------------- Slide Slider Management -------------
 const slidesCol = collection(db, 'slides');
 const slideForm = document.getElementById('slideForm');
@@ -1324,6 +1383,80 @@ if (openAddReservationModalBtn) {
 if (closeReservationModalBtn) {
     closeReservationModalBtn.addEventListener('click', () => {
         if (reservationModalEl) reservationModalEl.classList.remove('active');
+    });
+}
+
+// Export Reservations to Excel
+const exportReservationsBtn = document.getElementById('exportReservationsExcelBtn');
+if (exportReservationsBtn) {
+    exportReservationsBtn.addEventListener('click', () => {
+        const resList = Object.values(allReservations);
+        if (resList.length === 0) {
+            alert("لا توجد حجوزات لتصديرها.");
+            return;
+        }
+
+        // Sort desc by createdAt
+        resList.sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
+
+        const excelData = resList.map((res, index) => {
+            const price = parseFloat(res.totalPrice) || 0;
+            const paid = parseFloat(res.paidAmount) || 0;
+            const rem = Math.max(0, price - paid);
+
+            let dateStr = '-';
+            if (res.createdAt || res.updatedAt) {
+                const dateVal = res.createdAt || res.updatedAt;
+                let dateObj = dateVal.toDate ? dateVal.toDate() : new Date(dateVal.seconds ? dateVal.seconds * 1000 : dateVal);
+                if (!isNaN(dateObj.getTime())) {
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const year = dateObj.getFullYear();
+                    let hours = dateObj.getHours();
+                    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                    const ampm = hours >= 12 ? 'م' : 'ص';
+                    hours = hours % 12 || 12;
+                    dateStr = `${year}/${month}/${day} ${hours}:${minutes} ${ampm}`;
+                }
+            }
+
+            return {
+                "م": index + 1,
+                "تاريخ الحجز": dateStr,
+                "اسم العميل": res.customerName || 'بدون اسم',
+                "رقم التليفون": res.customerPhone || '',
+                "العنوان": res.customerAddress || '',
+                "شركة / مصدر الدواء": res.branch || res.sourceLocation || '',
+                "تفاصيل الطلب والأدوية": res.orderDetails || '',
+                "سعر الطلب (ج.م)": price,
+                "المحصل (ج.م)": paid,
+                "المتبقي (ج.م)": rem,
+                "حالة الحجز": res.status || 'غير مكتمل',
+                "ملاحظات": res.notes || ''
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        worksheet['!cols'] = [
+            { wch: 6 },  // م
+            { wch: 22 }, // تاريخ الحجز
+            { wch: 22 }, // اسم العميل
+            { wch: 15 }, // رقم التليفون
+            { wch: 25 }, // العنوان
+            { wch: 22 }, // شركة / مصدر الدواء
+            { wch: 35 }, // تفاصيل الطلب والأدوية
+            { wch: 15 }, // سعر الطلب
+            { wch: 14 }, // المحصل
+            { wch: 14 }, // المتبقي
+            { wch: 12 }, // حالة الحجز
+            { wch: 25 }  // ملاحظات
+        ];
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "حجوزات الأدوية");
+
+        const today = new Date().toISOString().split('T')[0];
+        XLSX.writeFile(workbook, `حجوزات_الأدوية_صيدلية_البدري_${today}.xlsx`);
     });
 }
 

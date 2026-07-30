@@ -142,6 +142,9 @@
                                 <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv"
                                     style="display: none;">
                             </div>
+                            <button class="btn-outline" id="exportProductsExcelBtn"
+                                style="border-radius: 10px; padding: 10px 15px; color: #16a34a; border-color: #16a34a; font-weight: 600;"><i
+                                    class="fa-solid fa-file-excel"></i> تصدير المنتجات (إكسيل)</button>
                             <button class="btn-outline" id="openCategoriesModal"
                                 style="border-radius: 10px; padding: 10px 15px;"><i class="fa-solid fa-tags"></i> إدارة
                                 الأقسام</button>
@@ -364,9 +367,14 @@
                 <div class="panel">
                     <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
                         <h3>قائمة حجوزات الأدوية</h3>
-                        <button class="btn-primary" id="openAddReservationModal" style="border-radius: 10px; padding: 10px 18px;">
-                            <i class="fa-solid fa-plus"></i> إضافة حجز جديد
-                        </button>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <button class="btn-outline" id="exportReservationsExcelBtn" style="border-radius: 10px; padding: 10px 18px; color: #16a34a; border-color: #16a34a; font-weight: 600;">
+                                <i class="fa-solid fa-file-excel"></i> سحب الداتا إكسيل
+                            </button>
+                            <button class="btn-primary" id="openAddReservationModal" style="border-radius: 10px; padding: 10px 18px;">
+                                <i class="fa-solid fa-plus"></i> إضافة حجز جديد
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Filter & Search Row -->
