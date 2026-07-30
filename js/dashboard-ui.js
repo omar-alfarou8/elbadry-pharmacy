@@ -1,3 +1,19 @@
+// Sidebar Toggle Handler
+const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+const dashboardContainer = document.getElementById('dashboardContainer');
+
+if (localStorage.getItem('sidebarCollapsed') === 'true' && dashboardContainer) {
+    dashboardContainer.classList.add('sidebar-collapsed');
+}
+
+if (sidebarToggleBtn && dashboardContainer) {
+    sidebarToggleBtn.addEventListener('click', () => {
+        dashboardContainer.classList.toggle('sidebar-collapsed');
+        const isCollapsed = dashboardContainer.classList.contains('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    });
+}
+
 // Simple UI Navigation Script
 const links = document.querySelectorAll('.sidebar-menu a[data-target]');
 const sections = document.querySelectorAll('.dashboard-section');

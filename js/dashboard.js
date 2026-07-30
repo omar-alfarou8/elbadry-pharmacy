@@ -1555,28 +1555,28 @@ function renderReservations() {
         const branchName = res.branch || res.sourceLocation || '';
         const createdDateHtml = formatReservationDate(res.createdAt || res.updatedAt);
         const branchBadgeHtml = branchName 
-            ? `<span style="display:inline-block; background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.2); padding: 4px 10px; border-radius: 20px; font-weight:600; font-size:12px;"><i class="fa-solid fa-building" style="margin-left:4px;"></i>${escapeHTML(branchName)}</span>`
-            : `<span style="color:var(--text-gray); font-size:13px;">-</span>`;
+            ? `<span style="display:inline-block; background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.2); padding: 3px 7px; border-radius: 15px; font-weight:600; font-size:11px;"><i class="fa-solid fa-building" style="margin-left:3px;"></i>${escapeHTML(branchName)}</span>`
+            : `<span style="color:var(--text-gray); font-size:12px;">-</span>`;
 
         tr.innerHTML = `
             <td><strong>${index + 1}</strong></td>
-            <td style="white-space: nowrap;">${createdDateHtml}</td>
+            <td style="white-space: nowrap; font-size:11.5px;">${createdDateHtml}</td>
             <td>
-                <div style="font-weight:700;">${escapeHTML(res.customerName || 'بدون اسم')}</div>
-                <div style="font-size:13px; color:var(--text-gray); font-family:monospace;" dir="ltr">${escapeHTML(res.customerPhone || '')}</div>
+                <div style="font-weight:700; font-size:12px;">${escapeHTML(res.customerName || 'بدون اسم')}</div>
+                <div style="font-size:11px; color:var(--text-gray); font-family:monospace;" dir="ltr">${escapeHTML(res.customerPhone || '')}</div>
             </td>
-            <td style="max-width: 130px; font-size:13px;">${escapeHTML(res.customerAddress || '-')}</td>
-            <td style="max-width: 150px; font-size:13px;">${branchBadgeHtml}</td>
-            <td style="max-width: 200px; white-space: pre-wrap; font-size:13px;">${escapeHTML(res.orderDetails || '-')}</td>
-            <td><strong>${price.toFixed(2)}</strong> ج.م</td>
-            <td style="color:#16a34a;"><strong>${paid.toFixed(2)}</strong> ج.م</td>
-            <td>
+            <td style="max-width: 110px; font-size:11.5px; word-break: break-word;">${escapeHTML(res.customerAddress || '-')}</td>
+            <td style="max-width: 110px; font-size:11.5px;">${branchBadgeHtml}</td>
+            <td style="max-width: 140px; white-space: pre-wrap; word-break: break-word; font-size:11.5px;">${escapeHTML(res.orderDetails || '-')}</td>
+            <td style="white-space: nowrap; font-size:12px;"><strong>${price.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
+            <td style="color:#16a34a; white-space: nowrap; font-size:12px;"><strong>${paid.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
+            <td style="white-space: nowrap;">
                 <span class="remaining-tag ${rem > 0 ? 'remaining-has-balance' : 'remaining-zero'}">
                     ${rem.toFixed(2)} ج.م
                 </span>
             </td>
             <td>
-                <select style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 13px; font-weight: bold;"
+                <select style="padding: 3px 4px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 11.5px; font-weight: bold; width: 100%; max-width: 88px;"
                         onchange="updateReservationStatus('${res.id}', this.value)" class="${statusClass}">
                     <option value="غير مكتمل" ${res.status === 'غير مكتمل' ? 'selected' : ''}>غير مكتمل</option>
                     <option value="مكتمل" ${res.status === 'مكتمل' ? 'selected' : ''}>مكتمل</option>
@@ -1584,7 +1584,7 @@ function renderReservations() {
                 </select>
             </td>
             <td>
-                <div style="display:flex; gap:6px; align-items:center;">
+                <div style="display:flex; gap:4px; align-items:center; white-space:nowrap;">
                     <button class="btn-whatsapp" onclick="openWaModal('${res.id}')" title="مشاركة عبر واتساب">
                         <i class="fa-brands fa-whatsapp"></i> واتساب
                     </button>
