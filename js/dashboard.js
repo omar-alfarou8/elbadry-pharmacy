@@ -1335,8 +1335,11 @@ function renderReservations() {
         if (res.status !== 'ملغي') {
             totalCount++;
             const price = parseFloat(res.totalPrice) || 0;
-            const paid = parseFloat(res.paidAmount) || 0;
-            const rem = Math.max(0, price - paid);
+            const isCompleted = res.status === 'مكتمل';
+            const isIncomplete = res.status === 'غير مكتمل';
+
+            const paid = isCompleted ? price : (isIncomplete ? 0 : (parseFloat(res.paidAmount) || 0));
+            const rem = isCompleted ? 0 : (isIncomplete ? price : Math.max(0, price - paid));
 
             totalValue += price;
             totalCollected += paid;
@@ -1373,8 +1376,11 @@ function renderReservations() {
         const tr = document.createElement('tr');
 
         const price = parseFloat(res.totalPrice) || 0;
-        const paid = parseFloat(res.paidAmount) || 0;
-        const rem = Math.max(0, price - paid);
+        const isCompleted = res.status === 'مكتمل';
+        const isIncomplete = res.status === 'غير مكتمل';
+
+        const paid = isCompleted ? price : (isIncomplete ? 0 : (parseFloat(res.paidAmount) || 0));
+        const rem = isCompleted ? 0 : (isIncomplete ? price : Math.max(0, price - paid));
 
         let statusClass = 'status-pending';
         if (res.status === 'مكتمل') statusClass = 'status-completed';
@@ -1421,6 +1427,19 @@ function renderReservations() {
     });
 }
 
+// Auto sync paid amount when status select changes in modal form
+if (resStatusInput) {
+    resStatusInput.addEventListener('change', () => {
+        if (resStatusInput.value === 'مكتمل' && resTotalPriceInput && resPaidAmountInput) {
+            resPaidAmountInput.value = resTotalPriceInput.value;
+            updateRemaining();
+        } else if (resStatusInput.value === 'غير مكتمل' && resPaidAmountInput) {
+            resPaidAmountInput.value = '0';
+            updateRemaining();
+        }
+    });
+}
+
 // Form Submit: Add or Edit Reservation
 if (reservationFormEl) {
     reservationFormEl.addEventListener('submit', async (e) => {
@@ -1432,9 +1451,17 @@ if (reservationFormEl) {
         const address = resCustomerAddressInput ? resCustomerAddressInput.value.trim() : '';
         const details = resOrderDetailsInput ? resOrderDetailsInput.value.trim() : '';
         const totalPrice = parseFloat(resTotalPriceInput ? resTotalPriceInput.value : 0) || 0;
-        const paidAmount = parseFloat(resPaidAmountInput ? resPaidAmountInput.value : 0) || 0;
+        let paidAmount = parseFloat(resPaidAmountInput ? resPaidAmountInput.value : 0) || 0;
         const status = resStatusInput ? resStatusInput.value : 'غير مكتمل';
         const notes = resNotesInput ? resNotesInput.value.trim() : '';
+
+        if (status === 'مكتمل') {
+            paidAmount = totalPrice;
+        } else if (status === 'غير مكتمل') {
+            paidAmount = 0;
+        }
+
+        const remainingAmount = status === 'مكتمل' ? 0 : (status === 'غير مكتمل' ? totalPrice : Math.max(0, totalPrice - paidAmount));
 
         const data = {
             customerName: name,
@@ -1443,7 +1470,7 @@ if (reservationFormEl) {
             orderDetails: details,
             totalPrice: totalPrice,
             paidAmount: paidAmount,
-            remainingAmount: Math.max(0, totalPrice - paidAmount),
+            remainingAmount: remainingAmount,
             status: status,
             notes: notes,
             updatedAt: new Date().toISOString()
@@ -1495,11 +1522,25 @@ window.editReservation = function (id) {
 
 // Update status directly from table dropdown
 window.updateReservationStatus = async function (id, newStatus) {
+    const res = allReservations[id];
+    const updateData = {
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+    };
+
+    if (res) {
+        const price = parseFloat(res.totalPrice) || 0;
+        if (newStatus === 'مكتمل') {
+            updateData.paidAmount = price;
+            updateData.remainingAmount = 0;
+        } else if (newStatus === 'غير مكتمل') {
+            updateData.paidAmount = 0;
+            updateData.remainingAmount = price;
+        }
+    }
+
     try {
-        await updateDoc(doc(db, 'reservations', id), {
-            status: newStatus,
-            updatedAt: new Date().toISOString()
-        });
+        await updateDoc(doc(db, 'reservations', id), updateData);
     } catch (err) {
         console.error("Error updating status:", err);
         alert("تعذر تحديث الحالة.");
