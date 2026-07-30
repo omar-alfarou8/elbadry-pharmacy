@@ -1597,7 +1597,7 @@ if (cancelWaBtn) {
     });
 }
 
-// Send message to WhatsApp via wa.me link
+// Send message to WhatsApp via api.whatsapp.com link (prevents double-encoding)
 if (sendWaBtn) {
     sendWaBtn.addEventListener('click', () => {
         const res = allReservations[currentWaReservationId];
@@ -1619,7 +1619,9 @@ if (sendWaBtn) {
 
         const editedMessage = waMessageText ? waMessageText.value : '';
         const encoded = encodeURIComponent(editedMessage);
-        const waUrl = `https://wa.me/${cleaned}?text=${encoded}`;
+        
+        // Direct WhatsApp API URL (bypasses wa.me double-encoding redirect)
+        const waUrl = `https://api.whatsapp.com/send?phone=${cleaned}&text=${encoded}`;
 
         window.open(waUrl, '_blank');
 
