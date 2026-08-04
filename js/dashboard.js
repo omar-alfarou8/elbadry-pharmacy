@@ -1569,12 +1569,6 @@ function renderReservations() {
             <td style="max-width: 140px; white-space: pre-wrap; word-break: break-word; font-size:11.5px;">${escapeHTML(res.orderDetails || '-')}</td>
             <td style="white-space: nowrap; font-size:12px;"><strong>${price.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
             <td style="color:#16a34a; white-space: nowrap; font-size:12px;"><strong>${paid.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
-            <td style="max-width: 110px; font-size:11.5px; word-break: break-word;">${escapeHTML(res.customerAddress || '-')}</td>
-            <td style="white-space: nowrap;">
-                <span class="remaining-tag ${rem > 0 ? 'remaining-has-balance' : 'remaining-zero'}">
-                    ${rem.toFixed(2)} ج.م
-                </span>
-            </td>
             <td>
                 <select style="padding: 3px 4px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 11.5px; font-weight: bold; width: 100%; max-width: 88px;"
                         onchange="updateReservationStatus('${res.id}', this.value)" class="${statusClass}">
@@ -1582,6 +1576,12 @@ function renderReservations() {
                     <option value="مكتمل" ${res.status === 'مكتمل' ? 'selected' : ''}>مكتمل</option>
                     <option value="ملغي" ${res.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
                 </select>
+            </td>
+            <td style="max-width: 110px; font-size:11.5px; word-break: break-word;">${escapeHTML(res.customerAddress || '-')}</td>
+            <td style="white-space: nowrap;">
+                <span class="remaining-tag ${rem > 0 ? 'remaining-has-balance' : 'remaining-zero'}">
+                    ${rem.toFixed(2)} ج.م
+                </span>
             </td>
             <td>
                 <div style="display:flex; gap:4px; align-items:center; white-space:nowrap;">
