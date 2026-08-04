@@ -1565,11 +1565,11 @@ function renderReservations() {
                 <div style="font-weight:700; font-size:12px;">${escapeHTML(res.customerName || 'بدون اسم')}</div>
                 <div style="font-size:11px; color:var(--text-gray); font-family:monospace;" dir="ltr">${escapeHTML(res.customerPhone || '')}</div>
             </td>
-            <td style="max-width: 110px; font-size:11.5px; word-break: break-word;">${escapeHTML(res.customerAddress || '-')}</td>
             <td style="max-width: 110px; font-size:11.5px;">${branchBadgeHtml}</td>
             <td style="max-width: 140px; white-space: pre-wrap; word-break: break-word; font-size:11.5px;">${escapeHTML(res.orderDetails || '-')}</td>
             <td style="white-space: nowrap; font-size:12px;"><strong>${price.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
             <td style="color:#16a34a; white-space: nowrap; font-size:12px;"><strong>${paid.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
+            <td style="max-width: 110px; font-size:11.5px; word-break: break-word;">${escapeHTML(res.customerAddress || '-')}</td>
             <td style="white-space: nowrap;">
                 <span class="remaining-tag ${rem > 0 ? 'remaining-has-balance' : 'remaining-zero'}">
                     ${rem.toFixed(2)} ج.م
