@@ -1555,8 +1555,8 @@ function renderReservations() {
         const branchName = res.branch || res.sourceLocation || '';
         const createdDateHtml = formatReservationDate(res.createdAt || res.updatedAt);
         const branchBadgeHtml = branchName 
-            ? `<span style="display:inline-block; background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.2); padding: 3px 7px; border-radius: 15px; font-weight:600; font-size:11px;"><i class="fa-solid fa-building" style="margin-left:3px;"></i>${escapeHTML(branchName)}</span>`
-            : `<span style="color:var(--text-gray); font-size:12px;">-</span>`;
+            ? `<button type="button" onclick="openCompanySelector('${res.id}')" title="انقر لتغيير شركة الدواء" style="background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.25); padding: 4px 8px; border-radius: 15px; font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;" onmouseenter="this.style.background='rgba(11, 128, 122, 0.18)'" onmouseleave="this.style.background='rgba(11, 128, 122, 0.08)'"><i class="fa-solid fa-building"></i> ${escapeHTML(branchName)} <i class="fa-solid fa-pen" style="font-size:8.5px; opacity:0.6; margin-right:1px;"></i></button>`
+            : `<button type="button" onclick="openCompanySelector('${res.id}')" title="إضافة شركة الدواء" style="background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; padding: 3px 8px; border-radius: 12px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;" onmouseenter="this.style.background='#e2e8f0'" onmouseleave="this.style.background='#f8fafc'"><i class="fa-solid fa-plus" style="font-size:9.5px;"></i> إضافة شركة</button>`;
 
         tr.innerHTML = `
             <td><strong>${index + 1}</strong></td>
@@ -1814,3 +1814,187 @@ if (sendWaBtn) {
         if (whatsappModalEl) whatsappModalEl.classList.remove('active');
     });
 }
+
+/* =========================================================
+   Quick Company Selector & Option Management for Reservations
+   ========================================================= */
+
+const DEFAULT_COMPANY_OPTIONS = [
+    "الشركة المتحدة للدواء",
+    "ابن سينا فارما",
+    "فارما أوفرسيز",
+    "مالتي فارما",
+    "طيبة"
+];
+
+function getCompanyOptions() {
+    try {
+        const saved = localStorage.getItem('pharmacy_company_options');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.error("Error reading company options:", e);
+    }
+    return [...DEFAULT_COMPANY_OPTIONS];
+}
+
+function saveCompanyOptions(optionsList) {
+    try {
+        localStorage.setItem('pharmacy_company_options', JSON.stringify(optionsList));
+    } catch (e) {
+        console.error("Error saving company options:", e);
+    }
+    syncBranchesDatalist(optionsList);
+}
+
+function syncBranchesDatalist(optionsList) {
+    const datalist = document.getElementById('branchesList');
+    if (!datalist) return;
+    const options = optionsList || getCompanyOptions();
+    datalist.innerHTML = options.map(c => `<option value="${escapeHTML(c)}"></option>`).join('');
+}
+
+// Initial sync of full edit form datalist
+syncBranchesDatalist();
+
+// Company Modal DOM Elements
+const companyModalEl = document.getElementById('companySelectModal');
+const closeCompanyModalBtn = document.getElementById('closeCompanyModal');
+const cancelCompanyModalBtn = document.getElementById('cancelCompanyModalBtn');
+const companySelectResIdInput = document.getElementById('companySelectResId');
+const companyPresetOptionsContainer = document.getElementById('companyPresetOptions');
+const customCompanyInput = document.getElementById('customCompanyInput');
+const applyCustomCompanyBtn = document.getElementById('applyCustomCompanyBtn');
+const saveCustomCompanyCheckbox = document.getElementById('saveCustomCompanyCheckbox');
+const clearCompanyBtn = document.getElementById('clearCompanyBtn');
+
+let currentCompanyResId = null;
+
+// Open Company Selector Modal
+window.openCompanySelector = function (resId) {
+    const res = allReservations[resId];
+    if (!res) return;
+
+    currentCompanyResId = resId;
+    if (companySelectResIdInput) companySelectResIdInput.value = resId;
+
+    const currentCompany = res.branch || res.sourceLocation || '';
+    if (customCompanyInput) customCompanyInput.value = currentCompany;
+    if (saveCustomCompanyCheckbox) saveCustomCompanyCheckbox.checked = false;
+
+    renderCompanyPresetChips(currentCompany);
+
+    if (companyModalEl) companyModalEl.classList.add('active');
+};
+
+// Close modal helpers
+function closeCompanyModal() {
+    if (companyModalEl) companyModalEl.classList.remove('active');
+    currentCompanyResId = null;
+}
+
+if (closeCompanyModalBtn) closeCompanyModalBtn.addEventListener('click', closeCompanyModal);
+if (cancelCompanyModalBtn) cancelCompanyModalBtn.addEventListener('click', closeCompanyModal);
+
+// Render Chips in Selector Modal
+function renderCompanyPresetChips(selectedCompany) {
+    if (!companyPresetOptionsContainer) return;
+
+    const options = getCompanyOptions();
+    companyPresetOptionsContainer.innerHTML = '';
+
+    if (options.length === 0) {
+        companyPresetOptionsContainer.innerHTML = `<span style="font-size:12px; color:var(--text-gray);">لا توجد شركات مسجلة بالقائمة. أضف شركة من الحقل أدناه.</span>`;
+        return;
+    }
+
+    options.forEach(opt => {
+        const isSelected = opt === selectedCompany;
+        const chip = document.createElement('div');
+        chip.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: ${isSelected ? 'var(--primary-color)' : 'rgba(11, 128, 122, 0.08)'};
+            color: ${isSelected ? '#ffffff' : 'var(--primary-color)'};
+            border: 1px solid ${isSelected ? 'var(--primary-color)' : 'rgba(11, 128, 122, 0.25)'};
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+
+        chip.innerHTML = `
+            <span class="chip-title" style="flex:1;">${escapeHTML(opt)}</span>
+            <button type="button" title="حذف هذه الشركة من القائمة" style="background:none; border:none; color:${isSelected ? 'rgba(255,255,255,0.8)' : '#94a3b8'}; cursor:pointer; padding:0 2px; font-size:12px; line-height:1; display:flex; align-items:center;"
+                onclick="event.stopPropagation(); window.removePresetCompany('${escapeHTML(opt).replace(/'/g, "\\'")}')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+
+        // Click chip to select company for reservation
+        chip.addEventListener('click', () => {
+            selectCompanyForReservation(currentCompanyResId, opt);
+        });
+
+        companyPresetOptionsContainer.appendChild(chip);
+    });
+}
+
+// Remove company option from preset choices list permanently
+window.removePresetCompany = function (optToRemove) {
+    let options = getCompanyOptions();
+    options = options.filter(opt => opt !== optToRemove);
+    saveCompanyOptions(options);
+    const currentRes = allReservations[currentCompanyResId];
+    const currentCompany = currentRes ? (currentRes.branch || currentRes.sourceLocation || '') : '';
+    renderCompanyPresetChips(currentCompany);
+};
+
+// Select company and save to Firestore
+async function selectCompanyForReservation(resId, companyName) {
+    if (!resId) return;
+
+    try {
+        await updateDoc(doc(db, 'reservations', resId), {
+            branch: companyName,
+            sourceLocation: companyName,
+            updatedAt: new Date().toISOString()
+        });
+        closeCompanyModal();
+    } catch (err) {
+        console.error("Error updating reservation company:", err);
+        alert("حدث خطأ أثناء تحديث اسم الشركة.");
+    }
+}
+
+// Apply Custom / Other Company Name
+if (applyCustomCompanyBtn) {
+    applyCustomCompanyBtn.addEventListener('click', async () => {
+        const val = customCompanyInput ? customCompanyInput.value.trim() : '';
+
+        if (saveCustomCompanyCheckbox && saveCustomCompanyCheckbox.checked && val) {
+            let options = getCompanyOptions();
+            if (!options.includes(val)) {
+                options.push(val);
+                saveCompanyOptions(options);
+            }
+        }
+
+        await selectCompanyForReservation(currentCompanyResId, val);
+    });
+}
+
+// Clear / Erase company for current reservation
+if (clearCompanyBtn) {
+    clearCompanyBtn.addEventListener('click', async () => {
+        await selectCompanyForReservation(currentCompanyResId, '');
+    });
+}
+

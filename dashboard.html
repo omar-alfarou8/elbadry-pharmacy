@@ -809,6 +809,64 @@
         </div>
     </div>
 
+    <!-- Company Selector Modal -->
+    <div class="modal" id="companySelectModal">
+        <div class="modal-content" style="max-width: 480px; padding: 22px; border-radius: 16px;">
+            <div class="modal-header" style="margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+                <h3 style="display:flex; align-items:center; gap:8px; font-size:16.5px; margin:0; color:var(--secondary-color);">
+                    <i class="fa-solid fa-building" style="color:var(--primary-color);"></i> تحديد شركة / مصدر الدواء
+                </h3>
+                <button class="close-modal" id="closeCompanyModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <input type="hidden" id="companySelectResId">
+            
+            <p style="font-size:12.5px; color:var(--text-gray); margin-bottom:10px;">
+                اختر اسم الشركة سريعاً من القائمة أو أضف اسم شركة مخصص:
+            </p>
+
+            <!-- Preset Companies List -->
+            <label style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px; display: block; color: var(--secondary-color);">
+                الشركات المتاحة بالقائمة:
+            </label>
+            <div id="companyPresetOptions" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; max-height:170px; overflow-y:auto; padding:4px 0;">
+                <!-- Dynamically populated options -->
+            </div>
+
+            <hr style="border:none; border-top:1px dashed #cbd5e1; margin: 12px 0;">
+
+            <!-- Custom / Other Company Section -->
+            <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <label style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px; display: block; color: var(--secondary-color);">
+                    <i class="fa-solid fa-pen-to-square" style="color:var(--primary-color);"></i> اسم شركة مخصص (أخرى):
+                </label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="customCompanyInput" placeholder="اكتب اسم الشركة هنا..."
+                        style="flex:1; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; font-size:13px;">
+                    <button type="button" class="btn-primary" id="applyCustomCompanyBtn" style="padding:8px 14px; font-size:12.5px; white-space:nowrap; border-radius:8px; height: 38px; display:inline-flex; align-items:center; gap:4px;">
+                        تطبيق
+                    </button>
+                </div>
+                <div style="margin-top:8px; display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="saveCustomCompanyCheckbox" style="accent-color: var(--primary-color); cursor:pointer;">
+                    <label for="saveCustomCompanyCheckbox" style="font-size:11.5px; color:var(--text-color); cursor:pointer;">
+                        حفظ هذا الاسم في قائمة الاختيارات للمستقبل أيضاً
+                    </label>
+                </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div style="margin-top: 14px; display:flex; justify-content:space-between; align-items:center;">
+                <button type="button" id="clearCompanyBtn" style="background:none; border:none; color:#ef4444; font-size:12px; font-weight:600; cursor:pointer; padding:4px 0;">
+                    <i class="fa-solid fa-eraser"></i> مسح اسم الشركة (بدون شركة)
+                </button>
+                <button type="button" class="btn-outline" id="cancelCompanyModalBtn" style="padding:6px 14px; font-size:12.5px; border-radius:8px;">
+                    إغلاق
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SheetJS Script for Excel Upload -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
