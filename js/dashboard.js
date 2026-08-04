@@ -1322,6 +1322,8 @@ const resPaidAmountInput = document.getElementById('resPaidAmount');
 const resRemainingAmountInput = document.getElementById('resRemainingAmount');
 const resStatusInput = document.getElementById('resStatus');
 const resNotesInput = document.getElementById('resNotes');
+const resContactPersonInput = document.getElementById('resContactPerson');
+const resContactNoteInput = document.getElementById('resContactNote');
 
 const resSearchInput = document.getElementById('resSearchInput');
 const resStatusFilter = document.getElementById('resStatusFilter');
@@ -1435,6 +1437,8 @@ if (exportReservationsBtn) {
                 "العنوان": res.customerAddress || '',
                 "شركة / مصدر الدواء": res.branch || res.sourceLocation || '',
                 "تفاصيل الطلب والأدوية": res.orderDetails || '',
+                "تم التواصل بواسطة": res.contactPerson || '',
+                "ملاحظة التواصل": res.contactNote || '',
                 "سعر الطلب (ج.م)": price,
                 "المحصل (ج.م)": paid,
                 "المتبقي (ج.م)": rem,
@@ -1452,6 +1456,8 @@ if (exportReservationsBtn) {
             { wch: 25 }, // العنوان
             { wch: 22 }, // شركة / مصدر الدواء
             { wch: 35 }, // تفاصيل الطلب والأدوية
+            { wch: 20 }, // تم التواصل بواسطة
+            { wch: 30 }, // ملاحظة التواصل
             { wch: 15 }, // سعر الطلب
             { wch: 14 }, // المحصل
             { wch: 14 }, // المتبقي
@@ -1529,7 +1535,9 @@ function renderReservations() {
             (res.customerPhone && res.customerPhone.includes(searchVal)) ||
             (res.orderDetails && res.orderDetails.toLowerCase().includes(searchVal)) ||
             (res.branch && res.branch.toLowerCase().includes(searchVal)) ||
-            (res.sourceLocation && res.sourceLocation.toLowerCase().includes(searchVal));
+            (res.sourceLocation && res.sourceLocation.toLowerCase().includes(searchVal)) ||
+            (res.contactPerson && res.contactPerson.toLowerCase().includes(searchVal)) ||
+            (res.contactNote && res.contactNote.toLowerCase().includes(searchVal));
         const matchesStatus = !statusVal || res.status === statusVal;
         return matchesSearch && matchesStatus;
     });
@@ -1537,7 +1545,7 @@ function renderReservations() {
     reservationsTableBody.innerHTML = '';
 
     if (filtered.length === 0) {
-        reservationsTableBody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:30px; color:var(--text-gray);">لا توجد حجوزات مطابقة.</td></tr>`;
+        reservationsTableBody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:30px; color:var(--text-gray);">لا توجد حجوزات مطابقة.</td></tr>`;
         return;
     }
 
@@ -1558,6 +1566,31 @@ function renderReservations() {
             ? `<button type="button" onclick="openCompanySelector('${res.id}')" title="انقر لتغيير شركة الدواء" style="background: rgba(11, 128, 122, 0.08); color: var(--primary-color); border: 1px solid rgba(11, 128, 122, 0.25); padding: 4px 8px; border-radius: 15px; font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;" onmouseenter="this.style.background='rgba(11, 128, 122, 0.18)'" onmouseleave="this.style.background='rgba(11, 128, 122, 0.08)'"><i class="fa-solid fa-building"></i> ${escapeHTML(branchName)} <i class="fa-solid fa-pen" style="font-size:8.5px; opacity:0.6; margin-right:1px;"></i></button>`
             : `<button type="button" onclick="openCompanySelector('${res.id}')" title="إضافة شركة الدواء" style="background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; padding: 3px 8px; border-radius: 12px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;" onmouseenter="this.style.background='#e2e8f0'" onmouseleave="this.style.background='#f8fafc'"><i class="fa-solid fa-plus" style="font-size:9.5px;"></i> إضافة شركة</button>`;
 
+        const contactPerson = res.contactPerson || '';
+        const contactNote = res.contactNote || '';
+
+        let contactBadgeHtml = '';
+        if (contactPerson || contactNote) {
+            contactBadgeHtml = `
+                <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+                    <button type="button" onclick="openContactSelector('${res.id}')" title="انقر لتعديل بيانات التواصل والملاحظة"
+                        style="background: rgba(14, 165, 233, 0.08); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.25); padding: 4px 8px; border-radius: 15px; font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;"
+                        onmouseenter="this.style.background='rgba(14, 165, 233, 0.18)'" onmouseleave="this.style.background='rgba(14, 165, 233, 0.08)'">
+                        <i class="fa-solid fa-user-check" style="font-size:10px;"></i> ${escapeHTML(contactPerson || 'تم التواصل')} <i class="fa-solid fa-pen" style="font-size:8.5px; opacity:0.6; margin-right:1px;"></i>
+                    </button>
+                    ${contactNote ? `<div style="font-size:10.5px; color:#334155; background:#f1f5f9; border-right:2.5px solid #0284c7; padding:3px 6px; border-radius:4px; max-width:130px; word-break:break-word; line-height:1.3;" title="${escapeHTML(contactNote)}"><i class="fa-regular fa-comment-dots" style="font-size:9.5px; color:#0284c7;"></i> ${escapeHTML(contactNote)}</div>` : ''}
+                </div>
+            `;
+        } else {
+            contactBadgeHtml = `
+                <button type="button" onclick="openContactSelector('${res.id}')" title="تحديد من تواصل وملاحظة"
+                    style="background: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1; padding: 3px 8px; border-radius: 12px; font-size:11px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:0.2s;"
+                    onmouseenter="this.style.background='#e2e8f0'" onmouseleave="this.style.background='#f8fafc'">
+                    <i class="fa-solid fa-plus" style="font-size:9.5px;"></i> تم التواصل
+                </button>
+            `;
+        }
+
         tr.innerHTML = `
             <td><strong>${index + 1}</strong></td>
             <td style="white-space: nowrap; font-size:11.5px;">${createdDateHtml}</td>
@@ -1567,6 +1600,7 @@ function renderReservations() {
             </td>
             <td style="max-width: 110px; font-size:11.5px;">${branchBadgeHtml}</td>
             <td style="max-width: 140px; white-space: pre-wrap; word-break: break-word; font-size:11.5px;">${escapeHTML(res.orderDetails || '-')}</td>
+            <td style="max-width: 140px; font-size:11.5px;">${contactBadgeHtml}</td>
             <td style="color:#16a34a; white-space: nowrap; font-size:12px;"><strong>${paid.toFixed(2)}</strong> <span style="font-size:10px;">ج.م</span></td>
             <td>
                 <select style="padding: 3px 4px; border-radius: 6px; border: 1px solid var(--border-color); font-family: inherit; font-size: 11.5px; font-weight: bold; width: 100%; max-width: 88px;"
@@ -1626,6 +1660,8 @@ if (reservationFormEl) {
         let paidAmount = parseFloat(resPaidAmountInput ? resPaidAmountInput.value : 0) || 0;
         const status = resStatusInput ? resStatusInput.value : 'غير مكتمل';
         const notes = resNotesInput ? resNotesInput.value.trim() : '';
+        const contactPerson = resContactPersonInput ? resContactPersonInput.value.trim() : '';
+        const contactNote = resContactNoteInput ? resContactNoteInput.value.trim() : '';
 
         if (status === 'مكتمل' && paidAmount < totalPrice) {
             paidAmount = totalPrice;
@@ -1645,6 +1681,8 @@ if (reservationFormEl) {
             remainingAmount: remainingAmount,
             status: status,
             notes: notes,
+            contactPerson: contactPerson,
+            contactNote: contactNote,
             updatedAt: new Date().toISOString()
         };
 
@@ -1686,6 +1724,8 @@ window.editReservation = function (id) {
     if (resPaidAmountInput) resPaidAmountInput.value = res.paidAmount || 0;
     if (resStatusInput) resStatusInput.value = res.status || 'غير مكتمل';
     if (resNotesInput) resNotesInput.value = res.notes || '';
+    if (resContactPersonInput) resContactPersonInput.value = res.contactPerson || '';
+    if (resContactNoteInput) resContactNoteInput.value = res.contactNote || '';
 
     updateRemaining();
 
@@ -1997,4 +2037,200 @@ if (clearCompanyBtn) {
         await selectCompanyForReservation(currentCompanyResId, '');
     });
 }
+
+/* =========================================================
+   Quick Contact Person & Note Selector for Reservations
+   ========================================================= */
+
+const DEFAULT_CONTACT_PERSON_OPTIONS = [
+    "د. أحمد",
+    "د. محمد",
+    "د. محمود",
+    "صيدلي نوبتي",
+    "خدمة العملاء"
+];
+
+function getContactPersonOptions() {
+    try {
+        const saved = localStorage.getItem('pharmacy_contact_person_options');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.error("Error reading contact person options:", e);
+    }
+    return [...DEFAULT_CONTACT_PERSON_OPTIONS];
+}
+
+function saveContactPersonOptions(optionsList) {
+    try {
+        localStorage.setItem('pharmacy_contact_person_options', JSON.stringify(optionsList));
+    } catch (e) {
+        console.error("Error saving contact person options:", e);
+    }
+    syncContactPersonsDatalist(optionsList);
+}
+
+function syncContactPersonsDatalist(optionsList) {
+    const datalist = document.getElementById('contactPersonsList');
+    if (!datalist) return;
+    const options = optionsList || getContactPersonOptions();
+    datalist.innerHTML = options.map(c => `<option value="${escapeHTML(c)}"></option>`).join('');
+}
+
+// Initial sync of full edit form datalist
+syncContactPersonsDatalist();
+
+// Contact Modal DOM Elements
+const contactModalEl = document.getElementById('contactSelectModal');
+const closeContactModalBtn = document.getElementById('closeContactModal');
+const cancelContactModalBtn = document.getElementById('cancelContactModalBtn');
+const saveContactModalBtn = document.getElementById('saveContactModalBtn');
+const clearContactBtn = document.getElementById('clearContactBtn');
+const contactSelectResIdInput = document.getElementById('contactSelectResId');
+const contactPresetOptionsContainer = document.getElementById('contactPresetOptions');
+const customContactPersonInput = document.getElementById('customContactPersonInput');
+const saveCustomContactCheckbox = document.getElementById('saveCustomContactCheckbox');
+const contactNoteInput = document.getElementById('contactNoteInput');
+
+let currentContactResId = null;
+
+// Open Contact Selector Modal
+window.openContactSelector = function (resId) {
+    const res = allReservations[resId];
+    if (!res) return;
+
+    currentContactResId = resId;
+    if (contactSelectResIdInput) contactSelectResIdInput.value = resId;
+
+    const currentPerson = res.contactPerson || '';
+    const currentNote = res.contactNote || '';
+
+    if (customContactPersonInput) customContactPersonInput.value = currentPerson;
+    if (contactNoteInput) contactNoteInput.value = currentNote;
+    if (saveCustomContactCheckbox) saveCustomContactCheckbox.checked = false;
+
+    renderContactPresetChips(currentPerson);
+
+    if (contactModalEl) contactModalEl.classList.add('active');
+};
+
+// Close contact modal
+function closeContactModal() {
+    if (contactModalEl) contactModalEl.classList.remove('active');
+    currentContactResId = null;
+}
+
+if (closeContactModalBtn) closeContactModalBtn.addEventListener('click', closeContactModal);
+if (cancelContactModalBtn) cancelContactModalBtn.addEventListener('click', closeContactModal);
+
+// Render Chips in Contact Selector Modal
+function renderContactPresetChips(selectedPerson) {
+    if (!contactPresetOptionsContainer) return;
+
+    const options = getContactPersonOptions();
+    contactPresetOptionsContainer.innerHTML = '';
+
+    if (options.length === 0) {
+        contactPresetOptionsContainer.innerHTML = `<span style="font-size:12px; color:var(--text-gray);">لا يوجد مسؤولو تواصل مسجلون بالقائمة. أضف اسماً من الحقل أدناه.</span>`;
+        return;
+    }
+
+    options.forEach(opt => {
+        const isSelected = opt === selectedPerson;
+        const chip = document.createElement('div');
+        chip.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: ${isSelected ? '#0284c7' : 'rgba(14, 165, 233, 0.08)'};
+            color: ${isSelected ? '#ffffff' : '#0284c7'};
+            border: 1px solid ${isSelected ? '#0284c7' : 'rgba(14, 165, 233, 0.25)'};
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+
+        chip.innerHTML = `
+            <span class="chip-title" style="flex:1;"><i class="fa-solid fa-user" style="font-size:10px; margin-left:2px;"></i> ${escapeHTML(opt)}</span>
+            <button type="button" title="حذف هذا الاسم من القائمة" style="background:none; border:none; color:${isSelected ? 'rgba(255,255,255,0.8)' : '#94a3b8'}; cursor:pointer; padding:0 2px; font-size:12px; line-height:1; display:flex; align-items:center;"
+                onclick="event.stopPropagation(); window.removePresetContactPerson('${escapeHTML(opt).replace(/'/g, "\\'")}')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+
+        // Click chip to pick person name into input
+        chip.addEventListener('click', () => {
+            if (customContactPersonInput) customContactPersonInput.value = opt;
+            renderContactPresetChips(opt);
+        });
+
+        contactPresetOptionsContainer.appendChild(chip);
+    });
+}
+
+// Remove contact person option from preset choices list permanently
+window.removePresetContactPerson = function (optToRemove) {
+    let options = getContactPersonOptions();
+    options = options.filter(opt => opt !== optToRemove);
+    saveContactPersonOptions(options);
+    const currentPerson = customContactPersonInput ? customContactPersonInput.value : '';
+    renderContactPresetChips(currentPerson);
+};
+
+// Save Contact Info & Note to Firestore
+if (saveContactModalBtn) {
+    saveContactModalBtn.addEventListener('click', async () => {
+        if (!currentContactResId) return;
+
+        const personVal = customContactPersonInput ? customContactPersonInput.value.trim() : '';
+        const noteVal = contactNoteInput ? contactNoteInput.value.trim() : '';
+
+        if (saveCustomContactCheckbox && saveCustomContactCheckbox.checked && personVal) {
+            let options = getContactPersonOptions();
+            if (!options.includes(personVal)) {
+                options.push(personVal);
+                saveContactPersonOptions(options);
+            }
+        }
+
+        try {
+            await updateDoc(doc(db, 'reservations', currentContactResId), {
+                contactPerson: personVal,
+                contactNote: noteVal,
+                updatedAt: new Date().toISOString()
+            });
+            closeContactModal();
+        } catch (err) {
+            console.error("Error updating contact info:", err);
+            alert("حدث خطأ أثناء حفظ بيانات التواصل.");
+        }
+    });
+}
+
+// Clear / Erase contact info for current reservation
+if (clearContactBtn) {
+    clearContactBtn.addEventListener('click', async () => {
+        if (!currentContactResId) return;
+
+        try {
+            await updateDoc(doc(db, 'reservations', currentContactResId), {
+                contactPerson: '',
+                contactNote: '',
+                updatedAt: new Date().toISOString()
+            });
+            closeContactModal();
+        } catch (err) {
+            console.error("Error clearing contact info:", err);
+            alert("حدث خطأ أثناء مسح البيانات.");
+        }
+    });
+}
+
 

@@ -441,6 +441,7 @@
                                     <th>العميل والهاتف</th>
                                     <th>شركة / مصدر الدواء</th>
                                     <th>تفاصيل الطلب</th>
+                                    <th>تم التواصل</th>
                                     <th>المحصل</th>
                                     <th>الحالة</th>
                                     <th>سعر الطلب</th>
@@ -451,7 +452,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="11" style="text-align: center;">جاري تحميل الحجوزات...</td>
+                                    <td colspan="12" style="text-align: center;">جاري تحميل الحجوزات...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -752,6 +753,17 @@
                 </div>
                 <div class="input-row">
                     <div class="input-group" style="flex: 1;">
+                        <label>تم التواصل بواسطة <span style="font-size: 12px; color: var(--text-gray);">(اختياري)</span></label>
+                        <input type="text" id="resContactPerson" list="contactPersonsList" placeholder="اسم الشخص الذي تواصل...">
+                        <datalist id="contactPersonsList"></datalist>
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>ملاحظة التواصل <span style="font-size: 12px; color: var(--text-gray);">(تظهر بالجدول)</span></label>
+                        <input type="text" id="resContactNote" placeholder="ملاحظة خاصة بالتواصل مع العميل...">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group" style="flex: 1;">
                         <label>حالة الحجز</label>
                         <select id="resStatus"
                             style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid var(--border-color); font-family: inherit; font-size: 15px;">
@@ -863,6 +875,71 @@
                 <button type="button" class="btn-outline" id="cancelCompanyModalBtn" style="padding:6px 14px; font-size:12.5px; border-radius:8px;">
                     إغلاق
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Selector Modal -->
+    <div class="modal" id="contactSelectModal">
+        <div class="modal-content" style="max-width: 480px; padding: 22px; border-radius: 16px;">
+            <div class="modal-header" style="margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+                <h3 style="display:flex; align-items:center; gap:8px; font-size:16.5px; margin:0; color:var(--secondary-color);">
+                    <i class="fa-solid fa-user-check" style="color:var(--primary-color);"></i> تم التواصل بواسطة وملاحظات التواصل
+                </h3>
+                <button class="close-modal" id="closeContactModal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <input type="hidden" id="contactSelectResId">
+            
+            <p style="font-size:12.5px; color:var(--text-gray); margin-bottom:10px;">
+                اختر اسم الشخص الذي تواصل مع العميل وسجل ملاحظة التواصل:
+            </p>
+
+            <!-- Preset Contact Persons List -->
+            <label style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px; display: block; color: var(--secondary-color);">
+                مسؤولو التواصل المتاحون:
+            </label>
+            <div id="contactPresetOptions" style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; max-height:150px; overflow-y:auto; padding:4px 0;">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Custom Contact Person Name -->
+            <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom:12px;">
+                <label style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px; display: block; color: var(--secondary-color);">
+                    <i class="fa-solid fa-user-pen" style="color:var(--primary-color);"></i> اسم الشخص المسؤول (مخصص):
+                </label>
+                <input type="text" id="customContactPersonInput" placeholder="اكتب اسم الشخص الذي تواصل..."
+                    style="width:100%; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; font-size:13px; margin-bottom:8px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="saveCustomContactCheckbox" style="accent-color: var(--primary-color); cursor:pointer;">
+                    <label for="saveCustomContactCheckbox" style="font-size:11.5px; color:var(--text-color); cursor:pointer;">
+                        حفظ هذا الاسم في قائمة الاختيارات للمستقبل أيضاً
+                    </label>
+                </div>
+            </div>
+
+            <!-- Contact Note Input -->
+            <div style="margin-bottom:14px;">
+                <label style="font-weight: 700; font-size: 12.5px; margin-bottom: 6px; display: block; color: var(--secondary-color);">
+                    <i class="fa-regular fa-comment-dots" style="color:var(--primary-color);"></i> ملاحظة التواصل (تظهر في الجدول مباشرة):
+                </label>
+                <textarea id="contactNoteInput" rows="2" placeholder="أدخل أي ملاحظة حول التواصل مع العميل..."
+                    style="width:100%; padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; font-family:inherit; font-size:13px; resize:vertical;"></textarea>
+            </div>
+
+            <!-- Footer actions -->
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <button type="button" id="clearContactBtn" style="background:none; border:none; color:#ef4444; font-size:12px; font-weight:600; cursor:pointer; padding:4px 0;">
+                    <i class="fa-solid fa-eraser"></i> مسح البيانات
+                </button>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="btn-outline" id="cancelContactModalBtn" style="padding:6px 14px; font-size:12.5px; border-radius:8px;">
+                        إلغاء
+                    </button>
+                    <button type="button" class="btn-primary" id="saveContactModalBtn" style="padding:6px 16px; font-size:12.5px; border-radius:8px;">
+                        حفظ البيانات
+                    </button>
+                </div>
             </div>
         </div>
     </div>
