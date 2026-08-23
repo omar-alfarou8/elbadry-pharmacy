@@ -3,16 +3,19 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-aut
 import { getFirestore, enableMultiTabIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { getStorage } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
 
-// تم ربط المشروع بنجاح بقاعدة البيانات الخاصة بك!
-const firebaseConfig = {
-  apiKey: "AIzaSyBX6-BSOS1dmDzhFU5prB5jf2kHANHcA7A",
-  authDomain: "elbadry-pharmacy-60c74.firebaseapp.com",
-  projectId: "elbadry-pharmacy-60c74",
-  storageBucket: "elbadry-pharmacy-60c74.firebasestorage.app",
-  messagingSenderId: "721540149826",
-  appId: "1:721540149826:web:2735d84aa06655e449f3db",
-  measurementId: "G-8Q35M70CB8"
-};
+let firebaseConfig = {};
+
+try {
+  const res = await fetch('/api/config');
+  if (res.ok) {
+    const data = await res.json();
+    if (data && data.apiKey) {
+      firebaseConfig = data;
+    }
+  }
+} catch (e) {
+  console.warn("Could not load config from /api/config.", e);
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
